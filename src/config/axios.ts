@@ -1,7 +1,6 @@
 // src/config/axios.ts
 import axios from 'axios';
 
-// Creamos la instancia apuntando a la URL base de tu API en Go
 export const api = axios.create({
   baseURL: 'http://localhost:8080/api/v1',
   headers: {
@@ -9,13 +8,14 @@ export const api = axios.create({
   },
 });
 
-// Interceptor: Antes de que salga cualquier petición, le pegamos el JWT
 api.interceptors.request.use(
   (config) => {
-    // Más adelante guardaremos el token en el LocalStorage o Zustand
-    const token = localStorage.getItem('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const authStorage = localStorage.getItem('notaria-auth');
+    if (authStorage && config.headers) {
+      const { state } = JSON.parse(authStorage);
+      if (state.token) {
+        config.headers.Authorization = `Bearer ${state.token}`;
+      }
     }
     return config;
   },

@@ -1,12 +1,7 @@
-// src/App.tsx
+import { AppRouter } from './routes';
+
 function App() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-blue-600">
-        Notaría 178 - Dashboard
-      </h1>
-    </div>
-  )
+  return <AppRouter />;
 }
 
-export default App
+export default App;
