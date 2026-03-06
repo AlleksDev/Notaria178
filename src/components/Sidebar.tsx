@@ -66,7 +66,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-[#740A03] flex flex-col text-white">
+    <aside className="w-64 flex-shrink-0 bg-sidebar flex flex-col text-white">
       <div className="flex items-center justify-center py-6 px-4">
         <img src={logoMenu} alt="Notaría 178" className="h-16 object-contain" />
       </div>
@@ -79,8 +79,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-white/20 text-white'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  ? 'bg-sidebar-active/80 font-semibold text-white'
+                  : 'text-white/80 hover:bg-sidebar-active/40 hover:text-white'
               }`
             }
           >
