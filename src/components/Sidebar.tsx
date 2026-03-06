@@ -66,7 +66,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-[#5A0A0A] flex flex-col text-white">
+    <aside className="w-64 min-h-screen bg-[#740A03] flex flex-col text-white">
       <div className="flex items-center justify-center py-6 px-4">
         <img src={logoMenu} alt="Notaría 178" className="h-16 object-contain" />
       </div>
