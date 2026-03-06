@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #7a1315;
+  --color-primary-hover: #9b191c;
+  --color-primary-light: #b92427;
+  
+  --color-sidebar: #881518;
+  --color-sidebar-active: #a81c20;
+  
+  --color-gold: #e2c67c;
+  
+  --color-dashboard-bg: #f4f5f7;
+
+  /* Badges Colors */
+  --color-badge-process-bg: #e5e7eb;
+  --color-badge-process-text: #4b5563;
+  --color-badge-process-icon: #9ca3af;
+  
+  --color-badge-pending-bg: #fef3c7;
+  --color-badge-pending-text: #d97706;
+  
+  --color-badge-review-bg: #e0f2fe;
+  --color-badge-review-text: #0284c7;
+  
+  --color-badge-approved-bg: #dcfce7;
+  --color-badge-approved-text: #16a34a;
+  
+  --color-badge-rejected-bg: #fee2e2;
+  --color-badge-rejected-text: #dc2626;
+}
+
+/* Ensure no global scroll if we use h-screen layout */
+html, body {
+  @apply bg-dashboard-bg text-gray-800 antialiased;
+  height: 100%;
+}
+#root {
+  height: 100%;
+}
