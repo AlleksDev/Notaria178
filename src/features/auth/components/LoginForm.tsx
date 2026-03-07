@@ -41,19 +41,19 @@ export const LoginForm = () => {
 
   return (
     <div className="w-full max-w-sm mx-auto">
-      <p className="text-[11px] font-bold text-[#7A0B0B] tracking-wider mb-8 uppercase">
-        Sistema de Gestión - Notaría 178
+      <p className="text-[12px] font-bold text-[#740A03] tracking-widest mb-8 uppercase">
+        Sistema de Gestión — Notaría 178
       </p>
 
       <h1 className="text-3xl text-gray-900 mb-1">Acceso</h1>
-      <h2 className="text-3xl font-bold italic text-[#7A0B0B] mb-6">Autorizado</h2>
+      <h2 className="text-3xl font-bold italic text-[#740A03] mb-6">Autorizado</h2>
 
       <div className="flex items-center mb-8">
-        <div className="h-[2px] w-12 bg-[#7A0B0B]"></div>
+        <div className="h-[2px] w-12 bg-[#740A03]"></div>
         <div className="h-[1px] flex-1 bg-gray-300"></div>
       </div>
 
-      <p className="text-[13px] text-gray-500 mb-8 font-light">
+      <p className="text-[13px] text-gray-500 mb-8 font-normal tracking-wide">
         Ingresa tus datos para poder acceder al sistema
       </p>
 
@@ -75,7 +75,7 @@ export const LoginForm = () => {
         />
 
         <Input 
-          label="Contraseña" 
+          label="CONTRASEÑA" 
           type="password" 
           value={password} 
           onChange={setPassword}
@@ -87,7 +87,7 @@ export const LoginForm = () => {
           type="submit"
           disabled={isLoading}
           className={`w-full text-white font-bold tracking-wider py-3.5 rounded hover:bg-[#5a0808] transition-colors mt-8 text-sm ${
-            isLoading ? 'bg-[#7A0B0B]/70 cursor-wait' : 'bg-[#7A0B0B]'
+            isLoading ? 'bg-[#740A03]/70 cursor-wait' : 'bg-[#740A03]'
           }`}
         >
           {isLoading ? 'VERIFICANDO...' : 'CONTINUAR'}
@@ -95,7 +95,7 @@ export const LoginForm = () => {
       </form>
 
       <div className="mt-8 text-center">
-        <a href="#" className="text-[13px] text-gray-500 underline decoration-gray-400 underline-offset-4 hover:text-[#7A0B0B] transition-colors">
+        <a href="#" className="text-[13px] text-gray-500 underline decoration-gray-400 underline-offset-4 hover:text-[#740A03] transition-colors">
           ¿Olvidaste tu contraseña?
         </a>
       </div>

@@ -1,12 +1,12 @@
 // src/features/auth/pages/LoginPage.tsx
 import { LoginForm } from '../components/LoginForm';
-import folderImg from '../../../assets/A4_folder.png';
+import folderImg from '../../../assets/folder.png';
 
 export const LoginPage = () => {
   return (
-    <div className="h-screen w-full flex items-center overflow-hidden bg-[#E6E6E6]">
+    <div className="h-screen w-full flex justify-center items-center overflow-hidden bg-[#E6E6E6]">
       
-      <div className="hidden md:flex flex-1 items-center justify-center">
+      <div className="max-w-[50%] hidden md:flex flex-1 items-center justify-center">
         <img 
           src={folderImg} 
           alt="Expedientes Notaría 178" 

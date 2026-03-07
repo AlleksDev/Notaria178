@@ -22,7 +22,7 @@ const menuItems = [
   },
   {
     label: 'Proyectistas',
-    path: '/clients',
+    path: '/proyectistas',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
@@ -66,7 +66,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-[#5A0A0A] flex flex-col text-white">
+    <aside className="w-64 flex-shrink-0 bg-sidebar flex flex-col text-white">
       <div className="flex items-center justify-center py-6 px-4">
         <img src={logoMenu} alt="Notaría 178" className="h-16 object-contain" />
       </div>
@@ -79,8 +79,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-white/20 text-white'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  ? 'bg-sidebar-active/80 font-semibold text-white'
+                  : 'text-white/80 hover:bg-sidebar-active/40 hover:text-white'
               }`
             }
           >
