@@ -56,3 +56,12 @@ export interface WorkKPIs {
   approved: number;
   rejected: number;
 }
+
+export interface CreateWorkRequest {
+  branch_id: string;
+  client_id: string;
+  act_ids: string[];
+  main_drafter_id?: string;
+  folio?: string;
+  deadline?: string;
+}
