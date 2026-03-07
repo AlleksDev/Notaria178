@@ -9,6 +9,7 @@ import {
 import { GlobalSearch } from '../../../components/GlobalSearch';
 import { GlobalFilters } from '../../../components/GlobalFilters';
 import { WorkCard } from '../../../components/WorkCard';
+import { CreateWorkModal } from '../components/CreateWorkModal';
 import { useWorks } from '../hooks/useWorks';
 import { useWorkStats } from '../hooks/useWorkStats';
 import { getWorkDetail } from '../api/worksApi';
@@ -67,6 +68,7 @@ export const TrabajosPage = () => {
   const [sort, setSort] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Debounced search value
@@ -104,6 +106,7 @@ export const TrabajosPage = () => {
     total,
     isLoading,
     error,
+    refetch,
   } = useWorks({
     search: apiSearch,
     status: effectiveStatus,
@@ -118,6 +121,7 @@ export const TrabajosPage = () => {
   const {
     stats,
     isLoading: isStatsLoading,
+    refetch: refetchStats,
   } = useWorkStats(branchId || undefined);
 
   // Detail cache for enriching cards
@@ -207,6 +211,12 @@ export const TrabajosPage = () => {
     setStatusBadge(key);
     setCurrentPage(1);
   };
+
+  const handleCreateSuccess = useCallback(() => {
+    setShowCreateModal(false);
+    refetch();
+    refetchStats();
+  }, [refetch, refetchStats]);
 
   const handleSearchModeChange = (mode: SearchMode) => {
     setSearchMode(mode);
@@ -308,9 +318,8 @@ export const TrabajosPage = () => {
 
         <div className="ml-auto">
           <button
-            disabled
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#C07D30] text-white rounded-lg text-sm font-medium hover:bg-[#A86925] transition-colors opacity-60 cursor-not-allowed"
-            title="Próximamente"
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
           >
             <Plus size={16} />
             Agregar trabajo
@@ -425,6 +434,13 @@ export const TrabajosPage = () => {
           </button>
         </div>
       )}
+
+      {/* Create Work Modal */}
+      <CreateWorkModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import type {
   WorksResponse,
   WorkDetail,
   WorkKPIs,
+  CreateWorkRequest,
 } from '../types';
 
 const cleanParams = (params: Record<string, unknown>) => {
@@ -36,4 +37,14 @@ export const getWorkKPIs = async (
   if (branchId) params.branch_id = branchId;
   const { data } = await api.get<WorkKPIs>('/dashboard/kpis', { params });
   return data;
+};
+
+export const createWork = async (
+  request: CreateWorkRequest
+): Promise<WorkDetail> => {
+  const { data } = await api.post<{ message: string; data: WorkDetail }>(
+    '/works/create',
+    request
+  );
+  return data.data;
 };
