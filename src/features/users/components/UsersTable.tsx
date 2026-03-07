@@ -20,17 +20,25 @@ const formatDate = (dateStr: string) => {
 };
 
 const formatTime = (raw: string): string => {
+  let h = 0, m = 0;
   if (raw.includes('T')) {
     const date = new Date(raw);
     if (!isNaN(date.getTime())) {
-      const h = date.getUTCHours();
-      const m = date.getUTCMinutes();
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      const h12 = h % 12 || 12;
-      return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
-    }
+      h = date.getUTCHours();
+      m = date.getUTCMinutes();
+    } else return raw;
+  } else {
+    const parts = raw.split(':');
+    if (parts.length >= 2) {
+      h = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return raw;
+    } else return raw;
   }
-  return raw;
+
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
 };
 
 const formatSchedule = (start?: string, end?: string) => {

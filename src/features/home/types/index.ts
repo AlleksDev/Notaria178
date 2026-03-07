@@ -50,6 +50,7 @@ export interface DashboardFilters {
   start_date?: string;
   end_date?: string;
   search?: string;
+  sort?: string;
   limit?: number;
 }
 

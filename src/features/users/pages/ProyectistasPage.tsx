@@ -16,6 +16,7 @@ import { useUsers } from '../hooks/useUsers';
 import { useUserStats } from '../hooks/useUserStats';
 import { useAuthStore } from '../../../store/authStore';
 import { updateUser } from '../api/usersApi';
+import { timeframeToDateRange } from '../../../utils/dateUtils';
 import type { Proyectista } from '../types';
 
 const ITEMS_PER_PAGE = 6;
@@ -38,6 +39,8 @@ export const ProyectistasPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [branchId, setBranchId] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [timeframe, setTimeframe] = useState('month');
+  const [sort, setSort] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Proyectista | null>(null);
@@ -66,6 +69,7 @@ export const ProyectistasPage = () => {
   } = useUserStats(branchId || undefined);
 
   // Paginated user list
+  const dateRange = timeframeToDateRange(timeframe);
   const {
     data: users,
     total,
@@ -77,6 +81,9 @@ export const ProyectistasPage = () => {
     status: statusFilter || undefined,
     role: roleFilter || undefined,
     branch_id: branchId || undefined,
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+    sort: sort,
     limit: ITEMS_PER_PAGE,
     offset: (currentPage - 1) * ITEMS_PER_PAGE,
   });
@@ -88,6 +95,16 @@ export const ProyectistasPage = () => {
 
   const handleBranchChange = useCallback((val: string) => {
     setBranchId(val);
+    setCurrentPage(1);
+  }, []);
+
+  const handleTimeframeChange = useCallback((val: string) => {
+    setTimeframe(val);
+    setCurrentPage(1);
+  }, []);
+
+  const handleSortChange = useCallback((val: string) => {
+    setSort(val);
     setCurrentPage(1);
   }, []);
 
@@ -158,7 +175,11 @@ export const ProyectistasPage = () => {
         <div className="flex-shrink-0 sm:ml-auto">
           <GlobalFilters
             branchId={branchId}
+            timeframe={timeframe}
+            sort={sort}
             onLocationChange={handleBranchChange}
+            onDateChange={handleTimeframeChange}
+            onSortChange={handleSortChange}
           />
         </div>
       </div>
@@ -335,6 +356,7 @@ export const ProyectistasPage = () => {
         message={`¿Está seguro que desea cambiar el status del usuario ${deactivatingUser?.full_name ?? ''} a inactivo?`}
         confirmLabel="Sí, desactivar"
         cancelLabel="Cancelar"
+        variant="danger"
         isLoading={isDeactivating}
         onConfirm={confirmDeactivate}
         onCancel={() => setDeactivatingUser(null)}

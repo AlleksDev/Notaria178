@@ -38,6 +38,7 @@ export interface WorkFilters {
   branch_id?: string;
   start_date?: string;
   end_date?: string;
+  sort?: string;
   limit: number;
   offset: number;
 }
