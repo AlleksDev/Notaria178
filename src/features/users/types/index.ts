@@ -14,6 +14,9 @@ export interface ProyectistaFilters {
   status?: string;
   role?: string;
   branch_id?: string;
+  start_date?: string;
+  end_date?: string;
+  sort?: string;
   limit: number;
   offset: number;
 }
@@ -30,6 +33,8 @@ export interface CreateProyectistaRequest {
   role: string;
   branch_id?: string;
   phone?: string;
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface UpdateProyectistaRequest {

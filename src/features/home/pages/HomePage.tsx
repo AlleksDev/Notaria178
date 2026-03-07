@@ -19,7 +19,8 @@ export const HomePage = () => {
   const [filters, setFilters] = useState<DashboardFilters>({
     timeframe: 'month',
     branch_id: '',
-    search: ''
+    search: '',
+    sort: 'desc'
   });
 
   const handleSearch = useCallback((term: string) => {
@@ -32,6 +33,10 @@ export const HomePage = () => {
 
   const handleLocationChange = useCallback((branchId: string) => {
     setFilters(prev => prev.branch_id === branchId ? prev : { ...prev, branch_id: branchId });
+  }, []);
+
+  const handleSortChange = useCallback((sort: string) => {
+    setFilters(prev => prev.sort === sort ? prev : { ...prev, sort });
   }, []);
 
   const { data: kpiData, isLoading: isKpiLoading, error: kpiError } = useDashboardKPIs(filters);
@@ -54,8 +59,10 @@ export const HomePage = () => {
           <GlobalFilters
             timeframe={filters.timeframe}
             branchId={filters.branch_id}
+            sort={filters.sort}
             onDateChange={handleDateChange}
             onLocationChange={handleLocationChange}
+            onSortChange={handleSortChange}
           />
         </div>
       </div>

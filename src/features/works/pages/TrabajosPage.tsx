@@ -12,6 +12,7 @@ import { WorkCard } from '../../../components/WorkCard';
 import { useWorks } from '../hooks/useWorks';
 import { useWorkStats } from '../hooks/useWorkStats';
 import { getWorkDetail } from '../api/worksApi';
+import { timeframeToDateRange } from '../../../utils/dateUtils';
 import type { WorkStatus, WorkDetail } from '../types';
 
 const ITEMS_PER_PAGE = 8;
@@ -54,33 +55,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }>
   REJECTED: { bg: 'bg-badge-rejected-bg', text: 'text-badge-rejected-text', border: 'border-red-200' },
 };
 
-/** Convert timeframe string to start_date/end_date range */
-const getDateRange = (timeframe: string): { start_date?: string; end_date?: string } => {
-  if (!timeframe || timeframe === 'all') return {};
-  const now = new Date();
-  const end = now.toISOString().split('T')[0];
-  let start: Date;
-  switch (timeframe) {
-    case 'today':
-      start = now;
-      break;
-    case 'week':
-      start = new Date(now);
-      start.setDate(now.getDate() - 7);
-      break;
-    case 'month':
-      start = new Date(now);
-      start.setMonth(now.getMonth() - 1);
-      break;
-    case '3months':
-      start = new Date(now);
-      start.setMonth(now.getMonth() - 3);
-      break;
-    default:
-      return {};
-  }
-  return { start_date: start.toISOString().split('T')[0], end_date: end };
-};
+
 
 export const TrabajosPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,6 +64,7 @@ export const TrabajosPage = () => {
   const [statusBadge, setStatusBadge] = useState<WorkStatus | 'ALL'>('ALL');
   const [branchId, setBranchId] = useState('');
   const [timeframe, setTimeframe] = useState('all');
+  const [sort, setSort] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -121,7 +97,7 @@ export const TrabajosPage = () => {
   // Only send `search` to API when mode is folio (API only supports folio search)
   const apiSearch = searchMode === 'folio' && debouncedSearch ? debouncedSearch : undefined;
 
-  const dateRange = getDateRange(timeframe);
+  const dateRange = timeframeToDateRange(timeframe);
 
   const {
     data: works,
@@ -134,6 +110,7 @@ export const TrabajosPage = () => {
     branch_id: branchId || undefined,
     start_date: dateRange.start_date,
     end_date: dateRange.end_date,
+    sort: sort,
     limit: ITEMS_PER_PAGE,
     offset: (currentPage - 1) * ITEMS_PER_PAGE,
   });
@@ -214,6 +191,11 @@ export const TrabajosPage = () => {
     setCurrentPage(1);
   }, []);
 
+  const handleSortChange = useCallback((val: string) => {
+    setSort(val);
+    setCurrentPage(1);
+  }, []);
+
   const handleStatusTab = (tab: StatusTab) => {
     setStatusTab(tab);
     if (tab === 'APPROVED') setStatusBadge('ALL');
@@ -256,8 +238,10 @@ export const TrabajosPage = () => {
           <GlobalFilters
             branchId={branchId}
             timeframe={timeframe}
+            sort={sort}
             onLocationChange={handleBranchChange}
             onDateChange={handleTimeframeChange}
+            onSortChange={handleSortChange}
           />
         </div>
       </div>

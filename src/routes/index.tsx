@@ -4,6 +4,7 @@ import { MainLayout } from '../layouts';
 import { HomePage } from '../features/home/pages/HomePage';
 import { ProyectistasPage } from '../features/users/pages/ProyectistasPage';
 import { TrabajosPage } from '../features/works/pages/TrabajosPage';
+import { ProfilePage } from '../features/profile/pages/ProfilePage';
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
       {
         path: 'proyectistas',
         element: <ProyectistasPage />,
+      },
+      {
+        path: 'profile',
+        element: <ProfilePage />,
       },
     ],
   },
