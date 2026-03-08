@@ -10,6 +10,8 @@ import {
   Trash2,
   User,
   CalendarDays,
+  CheckCircle2,
+  Filter,
 } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { createWork } from '../api/worksApi';
@@ -23,6 +25,31 @@ import type { Client, CreateClientRequest } from '../../clients/types';
 import type { Act } from '../../acts/types';
 import type { Proyectista } from '../../users/types';
 import type { Branch } from '../../branches/types';
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
+const avatarColors = [
+  'bg-amber-600',
+  'bg-green-700',
+  'bg-blue-700',
+  'bg-purple-600',
+  'bg-pink-600',
+  'bg-teal-600',
+];
+
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarColors.length;
+  return avatarColors[index];
+};
 
 interface CreateWorkModalProps {
   isOpen: boolean;
@@ -482,74 +509,108 @@ export const CreateWorkModal = ({
             </label>
 
             <div ref={drafterRef} className="relative">
-              {/* Search input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={
-                    selectedDrafter
-                      ? selectedDrafter.full_name
-                      : drafterSearch
-                  }
-                  onChange={(e) => {
-                    if (selectedDrafter) {
-                      setMainDrafterId('');
-                    }
-                    setDrafterSearch(e.target.value);
-                    setShowDrafterDropdown(true);
-                  }}
-                  onFocus={() => setShowDrafterDropdown(true)}
-                  className={`w-full border border-gray-200 rounded-lg py-2.5 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors ${
-                    selectedDrafter ? 'bg-gray-50' : 'bg-white'
-                  }`}
-                  placeholder="Buscar por nombre"
-                />
-                {selectedDrafter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMainDrafterId('');
-                      setDrafterSearch('');
-                    }}
-                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              {!selectedDrafter ? (
+                /* Search input / Dropdown Container */
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={drafterSearch}
+                      onChange={(e) => {
+                        setDrafterSearch(e.target.value);
+                        setShowDrafterDropdown(true);
+                      }}
+                      onFocus={() => setShowDrafterDropdown(true)}
+                      className={`w-full border border-gray-200 rounded-lg py-2.5 pl-9 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors bg-white`}
+                      placeholder="Buscar por nombre..."
+                    />
+                    <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" strokeWidth={1.5} />
+                  </div>
 
-              {/* Dropdown */}
-              {showDrafterDropdown && !selectedDrafter && (
-                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
-                  {isLoadingDrafters ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  {/* Dropdown Options */}
+                  {showDrafterDropdown && (
+                    <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar p-2 outline-none">
+                      {isLoadingDrafters ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                        </div>
+                      ) : !branchId ? (
+                        <p className="text-sm text-gray-400 py-6 text-center">
+                          Selecciona una sucursal primero
+                        </p>
+                      ) : filteredDrafters.length === 0 ? (
+                        <p className="text-sm text-gray-400 py-6 text-center">
+                          Sin resultados
+                        </p>
+                      ) : (
+                        filteredDrafters.map((d) => (
+                           <button
+                             key={d.id}
+                             type="button"
+                             onClick={() => {
+                               setMainDrafterId(d.id);
+                               setDrafterSearch('');
+                               setShowDrafterDropdown(false);
+                             }}
+                             className="w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-gray-50"
+                           >
+                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base ${getAvatarColor(d.full_name)}`}>
+                                {getInitials(d.full_name)}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[15px] font-medium text-gray-800 leading-tight mb-0.5">{d.full_name}</span>
+                                <span className="text-sm text-gray-500 leading-tight">
+                                  {d.role === 'LOCAL_ADMIN' ? 'Administrador local' : 'Notario titular'}
+                                </span>
+                              </div>
+                           </button>
+                        ))
+                      )}
                     </div>
-                  ) : !branchId ? (
-                    <p className="text-sm text-gray-400 py-3 px-4">
-                      Selecciona una sucursal primero
-                    </p>
-                  ) : filteredDrafters.length === 0 ? (
-                    <p className="text-sm text-gray-400 py-3 px-4">
-                      Sin resultados
-                    </p>
-                  ) : (
-                    filteredDrafters.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => {
-                          setMainDrafterId(d.id);
-                          setDrafterSearch('');
-                          setShowDrafterDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-                      >
-                        {d.full_name}
-                      </button>
-                    ))
                   )}
+                </div>
+              ) : (
+                /* Selected State & Change Button */
+                <div className="flex flex-col gap-3">
+                  <div className="w-full border border-gray-200 rounded-lg p-3 flex items-center justify-between bg-white">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base ${getAvatarColor(selectedDrafter.full_name)}`}>
+                        {getInitials(selectedDrafter.full_name)}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[15px] font-medium text-gray-800 leading-tight mb-0.5">{selectedDrafter.full_name}</span>
+                        <span className="text-sm text-gray-500 leading-tight">
+                          {selectedDrafter.role === 'LOCAL_ADMIN' ? 'Administrador local' : 'Notario titular'}
+                        </span>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="w-6 h-6 text-green-700" strokeWidth={1.5} />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMainDrafterId('');
+                        setDrafterSearch('');
+                        setShowDrafterDropdown(true);
+                        
+                        setTimeout(() => {
+                           const firstInput = drafterRef.current?.querySelector('input');
+                           firstInput?.focus();
+                        }, 0);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      Buscar diferente
+                    </button>
+                    
+                    {/* Add empty div to keep same width as client buttons if needed, or remove flex gap and use self-start if preferred 
+                        Here we just keep it simple and stretch the button to fill or match the client layout structure.
+                    */}
+                  </div>
                 </div>
               )}
             </div>
@@ -564,99 +625,145 @@ export const CreateWorkModal = ({
 
           {/* Client selector or inline form */}
           {!isNewClient ? (
-            <>
-              <div ref={clientRef} className="relative mb-3">
+            <div ref={clientRef} className="relative mb-6">
+              {!clientId ? (
+                /* Search input & Dropdown Container */
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={
-                      clientId
-                        ? clients.find((c) => c.id === clientId)?.full_name ?? clientSearch
-                        : clientSearch
-                    }
-                    onChange={(e) => {
-                      if (clientId) setClientId('');
-                      setClientSearch(e.target.value);
-                      setShowClientDropdown(true);
-                      clearField('client');
-                    }}
-                    onFocus={() => setShowClientDropdown(true)}
-                    className={`w-full border rounded-lg py-2.5 pl-9 pr-3 text-sm placeholder-gray-400 focus:outline-none transition-colors ${
-                      errors.client
-                        ? 'border-red-500'
-                        : 'border-gray-200 focus:border-primary'
-                    } ${clientId ? 'bg-gray-50' : 'bg-white'}`}
-                    placeholder="Buscar cliente existente..."
-                  />
-                  {clientId && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={clientSearch}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDropdown(true);
+                        clearField('client');
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      className={`w-full border rounded-lg py-2.5 pl-9 pr-8 text-sm placeholder-gray-400 focus:outline-none transition-colors ${
+                        errors.client
+                          ? 'border-red-500'
+                          : 'border-gray-200 focus:border-primary'
+                      } bg-white`}
+                      placeholder="Buscar cliente existente..."
+                    />
+                    <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" strokeWidth={1.5} />
+                  </div>
+
+                  {/* Dropdown Options */}
+                  {showClientDropdown && (
+                    <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar p-2 outline-none">
+                      {isLoadingLookups ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                        </div>
+                      ) : filteredClients.length === 0 ? (
+                        <p className="text-sm text-gray-400 py-6 text-center">
+                          Sin resultados
+                        </p>
+                      ) : (
+                        filteredClients.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setClientId(c.id);
+                              setClientSearch('');
+                              setShowClientDropdown(false);
+                              clearField('client');
+                            }}
+                            className="w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-gray-50"
+                          >
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base ${getAvatarColor(c.full_name)}`}>
+                              {getInitials(c.full_name)}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[15px] font-medium text-gray-800 leading-tight mb-0.5">{c.full_name}</span>
+                              <span className="text-sm text-gray-500 leading-tight">
+                                {c.rfc || 'Sin RFC'}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {errors.client && (
+                    <p className="mt-1 text-xs text-red-500">{errors.client}</p>
+                  )}
+
+                  {/* "+ Agregar cliente nuevo" button */}
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNewClient(true);
+                        setClientId('');
+                        setClientSearch('');
+                        clearField('client');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-gold rounded-lg text-gold hover:bg-gold/5 transition-colors text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Agregar cliente nuevo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Selected State & Change Buttons */
+                <div className="flex flex-col gap-3 mb-2">
+                  <div className="w-full border border-gray-200 rounded-lg p-3 flex items-center justify-between bg-white">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base ${getAvatarColor(clients.find((c) => c.id === clientId)?.full_name ?? '')}`}>
+                        {getInitials(clients.find((c) => c.id === clientId)?.full_name ?? '')}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[15px] font-medium text-gray-800 leading-tight mb-0.5">{clients.find((c) => c.id === clientId)?.full_name}</span>
+                        <span className="text-sm text-gray-500 leading-tight">
+                          {clients.find((c) => c.id === clientId)?.rfc || 'Sin RFC'}
+                        </span>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="w-6 h-6 text-green-700" strokeWidth={1.5} />
+                  </div>
+                  
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         setClientId('');
                         setClientSearch('');
+                        setShowClientDropdown(true);
+                        
+                        setTimeout(() => {
+                           const firstInput = clientRef.current?.querySelector('input');
+                           firstInput?.focus();
+                        }, 0);
                       }}
-                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium"
                     >
-                      <X className="w-4 h-4" />
+                      <Search className="w-3.5 h-3.5" />
+                      Buscar diferente
                     </button>
-                  )}
-                </div>
-
-                {showClientDropdown && !clientId && (
-                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
-                    {isLoadingLookups ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                      </div>
-                    ) : filteredClients.length === 0 ? (
-                      <p className="text-sm text-gray-400 py-3 px-4">
-                        Sin resultados
-                      </p>
-                    ) : (
-                      filteredClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setClientId(c.id);
-                            setClientSearch('');
-                            setShowClientDropdown(false);
-                            clearField('client');
-                          }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-                        >
-                          <span className="font-medium">{c.full_name}</span>
-                          {c.rfc && (
-                            <span className="ml-2 text-gray-400 text-xs">
-                              {c.rfc}
-                            </span>
-                          )}
-                        </button>
-                      ))
-                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNewClient(true);
+                        setClientId('');
+                        setClientSearch('');
+                        clearField('client');
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 border border-gold rounded-lg text-gold hover:bg-gold/5 transition-colors text-xs font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Nuevo cliente
+                    </button>
                   </div>
-                )}
-                {errors.client && (
-                  <p className="mt-1 text-xs text-red-500">{errors.client}</p>
-                )}
-              </div>
-
-              {/* "+ Agregar proyectista" style button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNewClient(true);
-                  setClientId('');
-                  setClientSearch('');
-                  clearField('client');
-                }}
-                className="w-full flex items-center gap-2 py-3 px-4 border-2 border-dashed border-gold rounded-lg text-gold hover:bg-gold/5 transition-colors text-sm font-medium mb-4"
-              >
-                <Plus className="w-4 h-4" />
-                Agregar cliente nuevo
-              </button>
-            </>
+                </div>
+              )}
+            </div>
           ) : (
             <>
               {/* Inline new client form */}

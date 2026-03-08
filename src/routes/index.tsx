@@ -5,6 +5,7 @@ import { HomePage } from '../features/home/pages/HomePage';
 import { ProyectistasPage } from '../features/users/pages/ProyectistasPage';
 import { TrabajosPage } from '../features/works/pages/TrabajosPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
+import { ActsCatalogPage } from '../features/acts/ActsCatalogPage';
 
 const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: 'profile',
         element: <ProfilePage />,
+      },
+      {
+        path: 'acts',
+        element: <ActsCatalogPage />,
       },
     ],
   },
