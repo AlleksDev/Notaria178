@@ -47,7 +47,7 @@ export const DistributionChart = ({ data, isLoading, error }: DistributionChartP
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col min-h-[320px]">
       <h2 className="text-sm font-bold text-gray-800 mb-2">Distribución por estados</h2>
-      <div className="flex-1 w-full relative">
+      <div className="flex-1 w-full min-h-[250px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <Pie

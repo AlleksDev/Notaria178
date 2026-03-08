@@ -8,7 +8,7 @@ import {
 import { GlobalSearch } from '../../../components/GlobalSearch';
 import { GlobalFilters } from '../../../components/GlobalFilters';
 import { ConfirmModal } from '../../../components/ConfirmModal';
-import { UserStatsCards } from '../components/UserStatsCards';
+import { KpiCards } from '../../../components/KpiCards';
 import { UsersTable } from '../components/UsersTable';
 import { CreateUserModal } from '../components/CreateUserModal';
 import { EditUserModal } from '../components/EditUserModal';
@@ -282,7 +282,7 @@ export const ProyectistasPage = () => {
       </div>
 
       {/* Stats cards */}
-      <UserStatsCards
+      <KpiCards
         total={stats.total}
         active={stats.active}
         inactive={stats.inactive}
