@@ -218,6 +218,8 @@ export const WorkDetailsPage = () => {
         const match = disposition.match(/filename[^;=\n]*=(['"].*?['"]|[^;\n]*)/)
         if (match?.[1]) finalName = match[1].replace(/['"]/g, '');
       }
+
+      let extension = '';
       if (!finalName.includes('.')) {
         const ct = response.headers['content-type'] || '';
         const extMap: Record<string, string> = {
@@ -227,13 +229,39 @@ export const WorkDetailsPage = () => {
           'application/msword': '.doc',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
         };
-        if (extMap[ct]) finalName += extMap[ct];
+        if (extMap[ct]) {
+          extension = extMap[ct];
+        }
+      } else {
+        const dotIdx = finalName.lastIndexOf('.');
+        if (dotIdx !== -1) {
+          extension = finalName.substring(dotIdx);
+        }
       }
+
+      // Helper for PascalCase and removing spaces/accents
+      const cleanString = (str: string) => {
+        if (!str) return 'SinDato';
+        return str
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^\w\s-]/g, '')
+          .trim()
+          .split(/[\s_-]+/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join('');
+      };
+
+      const folioPart = cleanString(work?.folio || 'SinFolio');
+      const clientPart = cleanString(work?.client_info?.full_name || work?.client_name || 'SinCliente');
+      const reqPart = cleanString(fileName);
+
+      const downloadName = `${folioPart}_${clientPart}_${reqPart}${extension}`;
+
       const blob = new Blob([response.data]);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = finalName;
+      a.download = downloadName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -241,7 +269,7 @@ export const WorkDetailsPage = () => {
     } catch {
       console.error('Error al descargar documento');
     }
-  }, []);
+  }, [work]);
 
   /* ─── Preview document by ID (opens fullscreen modal) ─── */
   const handlePreviewById = useCallback(async (docId: string, docName: string) => {
