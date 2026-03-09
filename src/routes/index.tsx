@@ -4,6 +4,7 @@ import { MainLayout } from '../layouts';
 import { HomePage } from '../features/home/pages/HomePage';
 import { ProyectistasPage } from '../features/users/pages/ProyectistasPage';
 import { TrabajosPage } from '../features/works/pages/TrabajosPage';
+import { WorkDetailsPage } from '../features/works/pages/WorkDetailsPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { ActsCatalogPage } from '../features/acts/ActsCatalogPage';
 
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
       {
         path: 'works',
         element: <TrabajosPage />,
+      },
+      {
+        path: 'works/:id',
+        element: <WorkDetailsPage />,
       },
       {
         path: 'proyectistas',

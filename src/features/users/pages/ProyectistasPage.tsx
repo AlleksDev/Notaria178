@@ -273,7 +273,7 @@ export const ProyectistasPage = () => {
         <div className="ml-auto">
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#C07D30] text-white rounded-lg text-sm font-medium hover:bg-[#A86925] transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
           >
             <Plus size={16} />
             Agregar proyectista
