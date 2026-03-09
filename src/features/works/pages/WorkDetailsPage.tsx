@@ -310,7 +310,7 @@ export const WorkDetailsPage = () => {
         (d) => d.category === 'DRAFT_DEED' || d.category === 'FINAL_DEED'
       ) || documents[0];
       if (oldPrimaryDoc) {
-        await deleteDocument(oldPrimaryDoc.id).catch(() => {});
+        await deleteDocument(oldPrimaryDoc.id).catch(() => { });
       }
 
       const freshDocs = await getWorkDocuments(id);
@@ -333,7 +333,7 @@ export const WorkDetailsPage = () => {
 
       // Delete existing document before uploading replacement
       if (pendingReqUpload.existingDocId) {
-        await deleteDocument(pendingReqUpload.existingDocId).catch(() => {});
+        await deleteDocument(pendingReqUpload.existingDocId).catch(() => { });
       }
 
       await uploadRequirementDocument(id, file, pendingReqUpload.id, pendingReqUpload.source);
@@ -1025,8 +1025,8 @@ export const WorkDetailsPage = () => {
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors relative ${isActive
-                      ? 'text-[#740A03]'
-                      : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-[#740A03]'
+                    : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
                   <Icon size={16} />
@@ -1069,11 +1069,10 @@ export const WorkDetailsPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isApproved || isUploadingDoc}
                     title={isApproved ? 'No se puede modificar un trabajo aprobado' : undefined}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isApproved || isUploadingDoc
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-[#740A03] text-white hover:bg-[#5c0802]'
-                    }`}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isApproved || isUploadingDoc
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#740A03] text-white hover:bg-[#5c0802]'
+                      }`}
                   >
                     {isUploadingDoc ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -1125,11 +1124,10 @@ export const WorkDetailsPage = () => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isApproved || isUploadingDoc}
                 title={isApproved ? 'No se puede modificar un trabajo aprobado' : undefined}
-                className={`mt-3 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors mx-auto ${
-                  isApproved || isUploadingDoc
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#740A03] text-white hover:bg-[#5c0802]'
-                }`}
+                className={`mt-3 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors mx-auto ${isApproved || isUploadingDoc
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#740A03] text-white hover:bg-[#5c0802]'
+                  }`}
               >
                 {isUploadingDoc ? (
                   <Loader2 size={14} className="animate-spin" />
