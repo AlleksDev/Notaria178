@@ -20,6 +20,9 @@ export interface Work {
 export interface WorkActInfo {
   act_id: string;
   name: string;
+  description?: string;
+  category?: string;
+  status?: string;
 }
 
 export interface WorkCollaborator {
@@ -27,9 +30,51 @@ export interface WorkCollaborator {
   full_name: string;
 }
 
+export interface ClientInfo {
+  id: string;
+  full_name: string;
+  rfc?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface DeduplicatedRequirement {
+  id: string;
+  name: string;
+  status: string;
+  source_acts: string[];
+  document_id?: string;
+}
+
+export interface WorkRequirement {
+  id: string;
+  work_id: string;
+  name: string;
+  document_id?: string;
+  created_at: string;
+}
+
 export interface WorkDetail extends Work {
   acts: WorkActInfo[];
   collaborators: WorkCollaborator[];
+  requirements: DeduplicatedRequirement[];
+  work_requirements: WorkRequirement[];
+  client_name?: string;
+  client_info?: ClientInfo;
+  branch_name?: string;
+  main_drafter_name?: string;
+}
+
+export interface WorkDocument {
+  id: string;
+  client_id?: string;
+  work_id?: string;
+  user_id?: string;
+  document_name: string;
+  category: string;
+  version: number;
+  file_path: string;
+  created_at: string;
 }
 
 export interface WorkFilters {
@@ -65,3 +110,4 @@ export interface CreateWorkRequest {
   folio?: string;
   deadline?: string;
 }
+

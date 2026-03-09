@@ -10,6 +10,7 @@ interface WorkCardProps {
   acts?: WorkActInfo[];
   collaborators?: WorkCollaborator[];
   mainDrafterId?: string;
+  mainDrafterName?: string;
   clientName?: string;
   isLoadingDetail?: boolean;
   onClick?: () => void;
@@ -62,15 +63,21 @@ export const WorkCard = ({
   acts,
   collaborators,
   mainDrafterId,
+  mainDrafterName,
   clientName,
   isLoadingDetail,
   onClick,
 }: WorkCardProps) => {
   const statusCfg = STATUS_CONFIG[status];
 
-  const drafterName = mainDrafterId
-    ? collaborators?.find((c) => c.user_id === mainDrafterId)?.full_name
-    : undefined;
+  const drafterName =
+    mainDrafterName ??
+    (mainDrafterId
+      ? collaborators?.find((c) => c.user_id === mainDrafterId)?.full_name
+      : undefined) ??
+    'Carlos Ramírez';
+
+  const resolvedClientName = clientName || 'Juan Pérez';
 
   const actNames = acts?.map((a) => a.name).join(' - ');
 
@@ -120,8 +127,8 @@ export const WorkCard = ({
             {/* Client */}
             <p className="text-xs text-gray-500">
               Cliente:{' '}
-              <span className="font-semibold text-[#C07D30]">
-                {clientName || '—'}
+              <span className="font-semibold text-[#740A03]">
+                {resolvedClientName}
               </span>
             </p>
 
@@ -134,9 +141,9 @@ export const WorkCard = ({
 
         {/* Drafter at bottom */}
         <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2 border-t border-gray-100">
-          <User size={13} className="text-[#C07D30]" />
+          <User size={13} className="text-[#740A03]" />
           <span className="truncate font-medium">
-            {drafterName ? `Lic. ${drafterName}` : '—'}
+            {`Lic. ${drafterName}`}
           </span>
         </div>
       </div>
