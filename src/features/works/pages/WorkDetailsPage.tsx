@@ -37,6 +37,7 @@ import {
   deleteWorkRequirement,
   uploadRequirementDocument,
   updateClient,
+  updateWorkStatus
 } from '../api/worksApi';
 import { searchActs } from '../../acts/api';
 import type { WorkDetail, WorkDocument } from '../types';
@@ -154,6 +155,8 @@ export const WorkDetailsPage = () => {
   const [clientForm, setClientForm] = useState({ full_name: '', rfc: '', phone: '', email: '' });
   const [isSavingClient, setIsSavingClient] = useState(false);
   const [clientFormErrors, setClientFormErrors] = useState<{ phone?: string; email?: string }>({});
+
+  const [isSendingReview, setIsSendingReview] = useState(false);
 
   const isClientFormDirty = useMemo(() => {
     const ci = work?.client_info;
@@ -450,6 +453,20 @@ export const WorkDetailsPage = () => {
       setIsSavingClient(false);
     }
   }, [work?.client_info?.id, clientForm, refreshWork]);
+
+  /* ─── Send to Review ─── */
+  const handleSendToReview = useCallback(async () => {
+    if (!id) return;
+    try {
+      setIsSendingReview(true);
+      await updateWorkStatus(id, 'READY_FOR_REVIEW');
+      await refreshWork();
+    } catch (err) {
+      console.error('Error al enviar a revisión:', err);
+    } finally {
+      setIsSendingReview(false);
+    }
+  }, [id, refreshWork]);
 
   /* ─── Search act catalog ─── */
   const handleSearchActs = useCallback(async (term: string) => {
@@ -999,10 +1016,16 @@ export const WorkDetailsPage = () => {
         </div>
 
         {/* Right side */}
-        <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#740A03] text-[#740A03] font-semibold text-sm hover:bg-[#740A03]/5 transition-colors self-start sm:self-center">
-          <Eye size={16} />
-          Enviar a revisión
-        </button>
+        {!isApproved && work.status !== 'READY_FOR_REVIEW' && (
+          <button 
+            onClick={handleSendToReview}
+            disabled={isSendingReview}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#740A03] text-[#740A03] font-semibold text-sm hover:bg-[#740A03]/5 transition-colors self-start sm:self-center disabled:opacity-50"
+          >
+            {isSendingReview ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
+            Enviar a revisión
+          </button>
+        )}
       </div>
 
       {/* Section divider */}

@@ -385,9 +385,6 @@ export const TrabajosPage = () => {
           {filteredWorks.map((work) => {
             const detail = detailCache[work.id];
             const isDetailLoading = loadingDetails.has(work.id) && !detail;
-            const resolvedDrafterName = work.main_drafter_id
-              ? detail?.collaborators?.find((c) => c.user_id === work.main_drafter_id)?.full_name
-              : undefined;
 
             return (
               <WorkCard
@@ -396,7 +393,7 @@ export const TrabajosPage = () => {
                 status={work.status}
                 createdAt={work.created_at}
                 mainDrafterId={work.main_drafter_id}
-                mainDrafterName={resolvedDrafterName}
+                mainDrafterName={detail?.main_drafter_name}
                 clientName={detail?.client_name}
                 acts={detail?.acts}
                 collaborators={detail?.collaborators}
