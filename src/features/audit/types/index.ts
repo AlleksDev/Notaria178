@@ -28,6 +28,7 @@ export interface DashboardActivityFilters {
   branch_id?: string;
   user_id?: string;
   entity_id?: string;
+  entity?: string;
   timeframe?: string;
   start_date?: string;
   end_date?: string;

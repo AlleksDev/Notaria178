@@ -6,6 +6,14 @@ import type { AuditLogAction } from '../types';
 import { GlobalSearch } from '../../../components/GlobalSearch';
 
 
+// Utility: format entity_id date from folio or created_at
+const formatDateShort = (dateString?: string) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 // Utility for relative time / date formatting
 const formatTimeOrDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -20,15 +28,38 @@ const formatTimeOrDate = (dateString: string) => {
   return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
+// Build a human-readable target string — never show raw UUIDs
+const buildTarget = (item: AuditLogAction): string => {
+  const d = item.json_details;
+  const dateStr = formatDateShort(item.created_at);
+
+  // For WORK entities, show folio + date
+  if (item.entity === 'WORK') {
+    if (d?.folio) return `Folio #${d.folio} el ${dateStr}`;
+    return `Trabajo el ${dateStr}`;
+  }
+
+  // For USER entities, show name/email
+  if (item.entity === 'USER') {
+    if (d?.name) return d.name;
+    if (d?.email) return d.email;
+    return '';
+  }
+
+  // Fallback: use details or nothing (never raw UUID)
+  if (d?.name) return d.name;
+  if (d?.folio) return `Folio #${d.folio}`;
+  return '';
+};
+
 export default function AuditHistoryPage() {
   const { 
     timelineData, metricsData, isLoading, error, 
     page, setPage, activeTab, setActiveTab, totalPages
   } = useAuditHistory(10);
 
-  const handleSearch = useCallback((term: string) => {
-    // We will hook this to the backend filters soon, for now it will just exist
-    console.log('Searching for:', term);
+  const handleSearch = useCallback((_term: string) => {
+    // Future: pass search term to backend filters
   }, []);
 
   // Group timeline data by Date
@@ -45,18 +76,77 @@ export default function AuditHistoryPage() {
     return Object.entries(groups).map(([dateGroup, items]) => ({
       dateGroup: `${dateGroup} (${items.length})`,
       items: items.map(item => {
-        let targetStr = item.entity_id;
-        
-        // Try to construct human-readable target from JSON details
-        if (item.json_details) {
-            targetStr = item.json_details.folio || item.json_details.name || item.json_details.title || item.entity_id;
+        let targetStr = buildTarget(item);
+        let displayAction = item.action.toLowerCase().replace(/_/g, ' ');
+        let colorType = item.action;
+        const dateStr = formatDateShort(item.created_at);
+
+        if (item.action === 'STATUS_CHANGE' && item.json_details?.new_status) {
+            const newStatus = item.json_details.new_status;
+            colorType = newStatus;
+            const folio = item.json_details?.folio ? `Folio #${item.json_details.folio}` : 'trabajo';
+            
+            switch(newStatus) {
+                case 'APPROVED': displayAction = `aprobó ${folio}`; break;
+                case 'REJECTED': displayAction = `rechazó ${folio}`; break;
+                case 'READY_FOR_REVIEW': displayAction = `envió a revisión ${folio}`; break;
+                case 'IN_PROGRESS': displayAction = `marcó en proceso ${folio}`; break;
+                case 'PENDING': displayAction = `marcó como pendiente ${folio}`; break;
+                default: displayAction = `cambió el estado a ${newStatus.toLowerCase().replace(/_/g, ' ')}`;
+            }
+            targetStr = dateStr ? `el ${dateStr}` : '';
+        } else if (item.action === 'CREATE') {
+            if (item.entity === 'WORK') {
+                const folio = item.json_details?.folio ? `con Folio #${item.json_details.folio}` : '';
+                displayAction = `agregó trabajo ${folio} el ${dateStr}`;
+                targetStr = '';
+            } else {
+                displayAction = 'agregó proyectista';
+            }
+        } else if (item.action === 'UPDATE') {
+            if (item.entity === 'WORK') {
+                const folio = item.json_details?.new_folio ? `Folio #${item.json_details.new_folio}` : (item.json_details?.folio ? `Folio #${item.json_details.folio}` : 'trabajo');
+                displayAction = `modificó ${folio}`;
+                targetStr = dateStr ? `el ${dateStr}` : '';
+            } else {
+                displayAction = 'editó información de';
+                targetStr = item.json_details?.name || '';
+            }
+        } else if (item.action === 'DELETE') {
+            displayAction = item.entity === 'USER' ? 'eliminó proyectista' : 'eliminó';
+        } else if (item.action === 'COMMENT') {
+            const folio = item.json_details?.folio ? `Folio #${item.json_details.folio}` : 'escritura';
+            displayAction = `comentó en ${folio}`;
+            targetStr = dateStr ? `el ${dateStr}` : '';
+        } else if (item.action === 'LOGIN') {
+            displayAction = 'inició sesión';
+            targetStr = '';
+        } else if (item.action === 'ASSIGN') {
+            const folio = item.json_details?.folio ? `Folio #${item.json_details.folio}` : 'un trabajo';
+            displayAction = `asignó ${folio} a ${item.json_details?.assigned_to || 'un proyectista'}`;
+            targetStr = '';
+        } else if (item.action === 'UNASSIGN') {
+            displayAction = `removió de colaborador a ${item.json_details?.removed_user || 'un proyectista'}`;
+            targetStr = '';
+        } else if (item.action === 'ADD_ACT') {
+            displayAction = `asoció acto "${item.json_details?.act_name || ''}" al trabajo`;
+            targetStr = item.json_details?.folio ? `Folio #${item.json_details.folio}` : '';
+        } else if (item.action === 'REMOVE_ACT') {
+            displayAction = `removió acto "${item.json_details?.act_name || ''}" del trabajo`;
+            targetStr = item.json_details?.folio ? `Folio #${item.json_details.folio}` : '';
+        } else if (item.action === 'ADD_REQUIREMENT') {
+            displayAction = `agregó requisito "${item.json_details?.requirement_name || ''}" al trabajo`;
+            targetStr = item.json_details?.folio ? `Folio #${item.json_details.folio}` : '';
+        } else if (item.action === 'DELETE_REQUIREMENT') {
+            displayAction = `eliminó requisito "${item.json_details?.requirement_name || ''}" del trabajo`;
+            targetStr = item.json_details?.folio ? `Folio #${item.json_details.folio}` : '';
         }
 
         return {
           id: item.id,
-          type: item.action,
+          type: colorType,
           user: item.user_name || 'Sistema',
-          action: item.action.toLowerCase().replace(/_/g, ' '),
+          action: displayAction,
           target: targetStr,
           time: formatTimeOrDate(item.created_at)
         };
@@ -64,36 +154,76 @@ export default function AuditHistoryPage() {
     }));
   }, [timelineData]);
 
-  // Colors mapping logic for actions
-  const getActionColorDetails = (action: string) => {
+  // Colors mapping logic for User Actions
+  const getUserActionColorDetails = (action: string) => {
     const act = action.toUpperCase();
-    if (act.includes('CREATE') || act.includes('ADD') || act.includes('AGREGAR')) return { tailwind: 'bg-emerald-500', hex: '#10B981', label: 'Agregado' };
-    if (act.includes('DELETE') || act.includes('REMOVE') || act.includes('REJECT')) return { tailwind: 'bg-red-500', hex: '#EF4444', label: 'Eliminado/Rechazado' };
-    if (act.includes('UPDATE') || act.includes('MODIFY') || act.includes('EDIT')) return { tailwind: 'bg-amber-400', hex: '#FBBF24', label: 'Modificado' };
-    if (act.includes('LOGIN') || act.includes('AUTH')) return { tailwind: 'bg-blue-500', hex: '#3B82F6', label: 'Inicio de sesión' };
-    if (act.includes('APPROVE') || act.includes('APROBAR')) return { tailwind: 'bg-orange-500', hex: '#F97316', label: 'Aprobado' };
-    if (act.includes('REVIEW') || act.includes('REVISIÓN')) return { tailwind: 'bg-teal-600', hex: '#0D9488', label: 'En revisión' };
+    if (act.includes('CREATE') || act.includes('ADD') || act.includes('AGREGA')) return { tailwind: 'bg-[#10B981]', hex: '#10B981', label: 'Agregado' };
+    if (act.includes('DELETE') || act.includes('REMOVE') || act.includes('ELIMINA')) return { tailwind: 'bg-[#dc2626]', hex: '#dc2626', label: 'Eliminado' };
+    if (act.includes('LOGIN') || act.includes('AUTH') || act.includes('INICIO')) return { tailwind: 'bg-[#8b5cf6]', hex: '#8b5cf6', label: 'Inicio de sesión' };
     
-    return { tailwind: 'bg-gray-400', hex: '#6B7280', label: action };
+    // Everything else (UPDATE, MODIFY, STATUS_CHANGE) goes to Modificado
+    return { tailwind: 'bg-[#f59e0b]', hex: '#f59e0b', label: 'Modificado' };
   };
 
-  const getDotColor = (type: string) => getActionColorDetails(type).tailwind;
+  // Colors mapping logic for Work Actions
+  const getWorkActionColorDetails = (action: string) => {
+    const act = action.toUpperCase();
+    if (act.includes('CREATE') || act.includes('AGREGA')) return { tailwind: 'bg-[#10B981]', hex: '#10B981', label: 'Agregado' };
+    if (act.includes('APPROVE') || act.includes('APROBA') || act.includes('APPROV')) return { tailwind: 'bg-[#10B981]', hex: '#10B981', label: 'Aprobado' };
+    if (act.includes('COMMENT') || act.includes('COMENTA')) return { tailwind: 'bg-[#f59e0b]', hex: '#f59e0b', label: 'Comentarios' };
+    if (act.includes('REJECT') || act.includes('RECHAZA')) return { tailwind: 'bg-[#dc2626]', hex: '#dc2626', label: 'Rechazado' };
+    if (act.includes('REVIEW') || act.includes('REVIS') || act.includes('ENVIA')) return { tailwind: 'bg-[#3b82f6]', hex: '#3b82f6', label: 'Enviado a revisión' };
+    if (act.includes('UPDATE') || act.includes('MODIFY') || act.includes('EDITA') || act.includes('MODIFICA')) return { tailwind: 'bg-[#f59e0b]', hex: '#f59e0b', label: 'Modificado' };
+    if (act.includes('ASSIGN') || act.includes('ASIGNA') || act.includes('UNASSIGN')) return { tailwind: 'bg-[#8b5cf6]', hex: '#8b5cf6', label: 'Asignado' };
+    if (act.includes('ADD_ACT') || act.includes('REMOVE_ACT')) return { tailwind: 'bg-[#06b6d4]', hex: '#06b6d4', label: 'Actos' };
+    if (act.includes('ADD_REQUIREMENT') || act.includes('DELETE_REQUIREMENT')) return { tailwind: 'bg-[#6366f1]', hex: '#6366f1', label: 'Requisitos' };
+    
+    return { tailwind: 'bg-gray-400', hex: '#9ca3af', label: 'Otros' };
+  };
+
+  const getDotColor = (type: string) => {
+    return activeTab === 'trabajos' ? getWorkActionColorDetails(type).tailwind : getUserActionColorDetails(type).tailwind;
+  };
 
   // Map Pie Chart Data (User Actions)
   const pieData = React.useMemo(() => {
     if (!metricsData?.user_actions) return [];
-    return metricsData.user_actions.map(m => {
-      const colorInfo = getActionColorDetails(m.action);
-      return { name: colorInfo.label, value: m.count, color: colorInfo.hex, originalAction: m.action };
+    
+    const grouped = new Map();
+    metricsData.user_actions.forEach(m => {
+      const colorInfo = getUserActionColorDetails(m.action);
+      if (grouped.has(colorInfo.label)) {
+        grouped.get(colorInfo.label).value += m.count;
+      } else {
+        grouped.set(colorInfo.label, { name: colorInfo.label, value: m.count, color: colorInfo.hex, originalAction: m.action });
+      }
     });
+    return Array.from(grouped.values());
   }, [metricsData]);
 
   // Map Bar Chart Data (Work Actions)
   const barData = React.useMemo(() => {
     if (!metricsData?.work_actions) return [];
-    return metricsData.work_actions.map(m => {
-      const colorInfo = getActionColorDetails(m.action);
-      return { name: colorInfo.label, value: m.count, fill: colorInfo.hex };
+
+    const grouped = new Map();
+    metricsData.work_actions.forEach(m => {
+      const colorInfo = getWorkActionColorDetails(m.action);
+      if (grouped.has(colorInfo.label)) {
+        grouped.get(colorInfo.label).value += m.count;
+      } else {
+        grouped.set(colorInfo.label, { name: colorInfo.label, value: m.count, fill: colorInfo.hex });
+      }
+    });
+    
+    // Sort logic to match expected order
+    const order = ['Agregado', 'Aprobado', 'Comentarios', 'Rechazado', 'Enviado a revisión', 'Modificado', 'Asignado', 'Otros'];
+    return Array.from(grouped.values()).sort((a, b) => {
+      const indexA = order.indexOf(a.name);
+      const indexB = order.indexOf(b.name);
+      // If a label isn't in 'order' map it to 'Otros' order index
+      const finalIndexA = indexA === -1 ? order.length : indexA;
+      const finalIndexB = indexB === -1 ? order.length : indexB;
+      return finalIndexA - finalIndexB;
     });
   }, [metricsData]);
 
@@ -274,7 +404,7 @@ export default function AuditHistoryPage() {
               <h3 className="text-[15px] font-bold text-gray-600 mb-6">Acciones de Proyectistas</h3>
               <div className="flex flex-col items-center justify-center w-full">
                 
-                <div className="relative w-48 h-48 mb-6">
+                <div className="relative w-48 h-48 min-h-[192px] mb-6">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -324,7 +454,7 @@ export default function AuditHistoryPage() {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-[15px] font-bold text-gray-600 mb-6">Acciones de trabajos</h3>
-              <div className="h-[280px] w-full mt-4">
+              <div className="w-full min-h-[280px] h-[280px] mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     layout="vertical"

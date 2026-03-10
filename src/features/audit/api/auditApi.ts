@@ -7,6 +7,7 @@ export const auditApi = {
     if (filters.branch_id) params.append('branch_id', filters.branch_id);
     if (filters.user_id) params.append('user_id', filters.user_id);
     if (filters.entity_id) params.append('entity_id', filters.entity_id);
+    if (filters.entity) params.append('entity', filters.entity);
     if (filters.timeframe) params.append('timeframe', filters.timeframe);
     if (filters.start_date) params.append('start_date', filters.start_date);
     if (filters.end_date) params.append('end_date', filters.end_date);
@@ -15,7 +16,7 @@ export const auditApi = {
     params.append('limit', (filters.limit || 10).toString());
     params.append('offset', (filters.offset || 0).toString());
 
-    const response = await api.get<PaginatedAuditLogs>(`/dashboard/activity?${params.toString()}`);
+    const response = await api.get<PaginatedAuditLogs>(`/audit/search?${params.toString()}`);
     return response.data;
   },
 
