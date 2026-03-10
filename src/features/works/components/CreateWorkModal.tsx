@@ -457,6 +457,7 @@ export const CreateWorkModal = ({
               <div className="relative">
                 <input
                   type="date"
+                  min={new Date().toISOString().split('T')[0]}
                   value={deadline}
                   onChange={(e) => {
                     setDeadline(e.target.value);
@@ -516,14 +517,21 @@ export const CreateWorkModal = ({
                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
+                      disabled={!branchId}
                       value={drafterSearch}
                       onChange={(e) => {
                         setDrafterSearch(e.target.value);
                         setShowDrafterDropdown(true);
                       }}
                       onFocus={() => setShowDrafterDropdown(true)}
-                      className={`w-full border border-gray-200 rounded-lg py-2.5 pl-9 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors bg-white`}
-                      placeholder="Buscar por nombre..."
+                      className={`w-full border border-gray-200 rounded-lg py-2.5 pl-9 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-primary transition-colors bg-white ${
+                        !branchId ? 'bg-gray-50 cursor-not-allowed opacity-70' : ''
+                      }`}
+                      placeholder={
+                        branchId
+                          ? "Buscar por nombre..."
+                          : "Selecciona una sucursal primero para buscar"
+                      }
                     />
                     <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" strokeWidth={1.5} />
                   </div>

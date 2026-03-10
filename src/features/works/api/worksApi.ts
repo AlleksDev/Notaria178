@@ -51,6 +51,17 @@ export const createWork = async (
   return data.data;
 };
 
+export const updateWorkStatus = async (
+  id: string,
+  status: string
+): Promise<WorkDetail> => {
+  const { data } = await api.patch<{ message: string; data: WorkDetail }>(
+    `/works/status/${encodeURIComponent(id)}`,
+    { status }
+  );
+  return data.data;
+};
+
 export const getWorkDocuments = async (
   workId: string
 ): Promise<WorkDocument[]> => {

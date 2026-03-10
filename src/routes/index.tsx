@@ -7,6 +7,7 @@ import { TrabajosPage } from '../features/works/pages/TrabajosPage';
 import { WorkDetailsPage } from '../features/works/pages/WorkDetailsPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { ActsCatalogPage } from '../features/acts/ActsCatalogPage';
+import AuditHistoryPage from '../features/audit/pages/AuditHistoryPage';
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: 'acts',
         element: <ActsCatalogPage />,
+      },
+      {
+        path: 'auditoria',
+        element: <AuditHistoryPage />,
       },
     ],
   },

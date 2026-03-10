@@ -75,9 +75,9 @@ export const WorkCard = ({
     (mainDrafterId
       ? collaborators?.find((c) => c.user_id === mainDrafterId)?.full_name
       : undefined) ??
-    'Carlos Ramírez';
+    'Sin asignar';
 
-  const resolvedClientName = clientName || 'Juan Pérez';
+  const resolvedClientName = clientName || 'Sin cliente';
 
   const actNames = acts?.map((a) => a.name).join(' - ');
 
@@ -143,7 +143,7 @@ export const WorkCard = ({
         <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-auto pt-2 border-t border-gray-100">
           <User size={13} className="text-[#740A03]" />
           <span className="truncate font-medium">
-            {`Lic. ${drafterName}`}
+            {drafterName}
           </span>
         </div>
       </div>
