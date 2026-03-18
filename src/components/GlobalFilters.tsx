@@ -1,7 +1,8 @@
-import { Calendar, Globe, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, Globe, ChevronDown, Loader2, UserCheck } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { getBranches } from '../features/branches/api/branchesApi';
 import type { Branch } from '../features/branches/types';
+import { AttendanceModal } from '../features/attendance/components/AttendanceModal';
 
 interface GlobalFiltersProps {
   timeframe?: string;
@@ -39,6 +40,7 @@ export const GlobalFilters = ({
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
@@ -202,6 +204,21 @@ export const GlobalFilters = ({
           </div>
         )}
       </div>
+
+      {/* Attendance Button */}
+      <button
+        onClick={() => setIsAttendanceModalOpen(true)}
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors focus:outline-none"
+      >
+        <UserCheck className="w-4 h-4" />
+        <span>Asistencia</span>
+      </button>
+
+      {/* Attendance Modal */}
+      <AttendanceModal
+        isOpen={isAttendanceModalOpen}
+        onClose={() => setIsAttendanceModalOpen(false)}
+      />
     </div>
   );
 };
