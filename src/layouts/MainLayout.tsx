@@ -9,29 +9,37 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const MainLayout = () => {
-  const { setUnreadCount } = useNotificationStore();
+  const { mergeNotifications } = useNotificationStore();
   const { token: jwtToken } = useAuthStore();
 
-  // Listener global de FCM: recibe push en primer plano, reproduce sonido, incrementa contador
   useFCMListener();
 
-  // Cargar el contador inicial de no leidas al montar el layout
   useEffect(() => {
     if (!jwtToken) return;
 
-    const fetchUnreadCount = async () => {
+    const syncNotifications = async () => {
       try {
-        const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+        const response = await axios.get(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${jwtToken}` },
         });
-        setUnreadCount(response.data.unread_count);
+
+        const notifications = response.data.data || [];
+        mergeNotifications(notifications);
+
+        console.log('[MainLayout] Notificaciones sincronizadas:', {
+          total: notifications.length,
+        });
       } catch (err) {
-        console.warn('[Notifications] Error obteniendo contador de no leidas:', err);
+        console.error('[MainLayout] Error sincronizando notificaciones:', err);
       }
     };
 
-    fetchUnreadCount();
-  }, [jwtToken, setUnreadCount]);
+    syncNotifications();
+
+    const interval = setInterval(syncNotifications, 60000);
+
+    return () => clearInterval(interval);
+  }, [jwtToken, mergeNotifications]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-dashboard-bg">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 import type { WorkComment, WSMessage, CommentPayload, WSErrorPayload } from '../types';
 
 const WS_BASE_URL = 'ws://localhost:8080';
@@ -10,11 +11,6 @@ interface UseCommentNotificationsOptions {
   onNewComment?: (comment: WorkComment, isOwnMessage: boolean) => void;
 }
 
-/**
- * Hook ligero que solo escucha notificaciones de nuevos comentarios.
- * A diferencia de useWorkComments, este hook NO carga el historial completo,
- * solo escucha por nuevos mensajes para actualizar badges/contadores.
- */
 export const useCommentNotifications = ({ workId, enabled = true, onNewComment }: UseCommentNotificationsOptions) => {
   const [isConnected, setIsConnected] = useState(false);
 
@@ -22,8 +18,8 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const onNewCommentRef = useRef(onNewComment);
   const { token, user } = useAuthStore();
+  const { addNotification } = useNotificationStore();
 
-  // Mantener el ref actualizado sin causar reconexiones
   useEffect(() => {
     onNewCommentRef.current = onNewComment;
   }, [onNewComment]);
@@ -31,7 +27,6 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
   const connect = useCallback(() => {
     if (!workId || !token || !enabled) return;
 
-    // Limpiar conexión previa si existe
     if (wsRef.current) {
       wsRef.current.close();
     }
@@ -42,7 +37,6 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
     ws.onopen = () => {
       setIsConnected(true);
 
-      // Unirse a la sala del trabajo
       ws.send(
         JSON.stringify({
           type: 'join_room',
@@ -55,12 +49,23 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
       try {
         const message: WSMessage = JSON.parse(event.data);
 
-        // Solo nos interesan los comentarios nuevos, ignoramos history
         if (message.type === 'comment') {
           const newComment = message.payload as CommentPayload;
           const isOwnMessage = newComment.user_id === user?.id;
 
-          // Notificar al padre
+          if (!isOwnMessage) {
+            addNotification({
+              id: newComment.id,
+              user_id: newComment.user_id,
+              work_id: workId,
+              type: 'NEW_COMMENT',
+              title: 'Nuevo comentario',
+              message: `${newComment.full_name || 'Usuario'} comento: ${newComment.content}`,
+              is_read: false,
+              created_at: newComment.created_at,
+            });
+          }
+
           onNewCommentRef.current?.(newComment, isOwnMessage);
         }
       } catch (e) {
@@ -70,7 +75,6 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
 
     ws.onclose = () => {
       setIsConnected(false);
-      // Reconexión automática
       if (enabled) {
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
@@ -81,14 +85,13 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
     ws.onerror = () => {
       setIsConnected(false);
     };
-  }, [workId, token, enabled, user?.id]);
+  }, [workId, token, enabled, user?.id, addNotification]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
     if (wsRef.current) {
-      // Abandonar sala antes de cerrar
       if (workId && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({

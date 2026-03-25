@@ -46,6 +46,7 @@ import { ConfirmModal } from '../../../components/ConfirmModal';
 import { CommentsSection } from '../components/CommentsSection';
 import { useCommentNotifications } from '../hooks/useCommentNotifications';
 import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 
 /* ─── Status config ─── */
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -488,8 +489,10 @@ export const WorkDetailsPage = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabKey>('documento');
-  const [unreadCommentsCount, setUnreadCommentsCount] = useState(0);
   const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
+  const { getUnreadCountForWork, notifications, markAsRead: markNotificationAsRead } = useNotificationStore();
+
+  const unreadCommentsCount = id ? getUnreadCountForWork(id) : 0;
 
   // Cargar último mensaje leído desde localStorage al montar
   useEffect(() => {
@@ -505,17 +508,21 @@ export const WorkDetailsPage = () => {
     const key = `work_${id}_last_read_message`;
     localStorage.setItem(key, messageId);
     setLastReadMessageId(messageId);
-    setUnreadCommentsCount(0); // Resetear contador
-  }, [id]);
+
+    notifications
+      .filter(n => n.work_id === id && !n.is_read && n.type === 'NEW_COMMENT')
+      .forEach(n => markNotificationAsRead(n.id));
+  }, [id, notifications, markNotificationAsRead]);
 
   // Handler para cambiar de tab
   const handleTabChange = useCallback((tabKey: TabKey) => {
     setActiveTab(tabKey);
-    // Resetear contador cuando el usuario va al tab de comentarios
-    if (tabKey === 'comentarios') {
-      setUnreadCommentsCount(0);
+    if (tabKey === 'comentarios' && id) {
+      notifications
+        .filter(n => n.work_id === id && !n.is_read && n.type === 'NEW_COMMENT')
+        .forEach(n => markNotificationAsRead(n.id));
     }
-  }, []);
+  }, [id, notifications, markNotificationAsRead]);
 
   // Ref para saber si estamos en el tab de comentarios (para el callback)
   const activeTabRef = useRef(activeTab);
@@ -523,21 +530,10 @@ export const WorkDetailsPage = () => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
-  // Handler para nuevos comentarios - solo contar si NO estamos viendo comentarios y NO es nuestro mensaje
-  const handleNewCommentIfNotViewing = useCallback((comment: WorkComment, isOwnMessage: boolean) => {
-    // No contar mensajes propios
-    if (isOwnMessage) return;
-    // No contar si estamos viendo el tab de comentarios
-    if (activeTabRef.current !== 'comentarios') {
-      setUnreadCommentsCount((prev) => prev + 1);
-    }
-  }, []);
-
-  // Hook ligero que SIEMPRE escucha notificaciones (independiente de si el tab está visible)
+  // Hook ligero que SIEMPRE escucha notificaciones
   useCommentNotifications({
     workId: id || null,
     enabled: true,
-    onNewComment: handleNewCommentIfNotViewing,
   });
 
   /* ─── Initial data fetch ─── */

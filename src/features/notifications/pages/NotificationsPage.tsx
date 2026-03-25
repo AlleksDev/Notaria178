@@ -22,7 +22,7 @@ export const NotificationsPage = () => {
   const filterRef = useRef<HTMLDivElement>(null);
 
   const { token } = useAuthStore();
-  const { notifications, setNotifications, markAsRead, markAllAsRead, setUnreadCount } = useNotificationStore();
+  const { notifications, mergeNotifications, markAsRead, markAllAsRead } = useNotificationStore();
   const navigate = useNavigate();
 
   // Cerrar menú de filtros al hacer clic fuera
@@ -45,14 +45,10 @@ export const NotificationsPage = () => {
         const response = await axios.get(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         const data = response.data.data || [];
-        setNotifications(data);
-        
-        // Recalcular no leídas por seguridad
-        const unread = data.filter((n: Notification) => !n.is_read).length;
-        setUnreadCount(unread);
-        
+        mergeNotifications(data);
+
       } catch (err) {
         console.error('[Notifications] Error fetching:', err);
         setError('No se pudieron cargar las notificaciones. Intenta de nuevo.');
@@ -62,7 +58,7 @@ export const NotificationsPage = () => {
     };
 
     fetchNotifications();
-  }, [token, setNotifications, setUnreadCount]);
+  }, [token, mergeNotifications]);
 
   const handleNotificationClick = async (notification: Notification) => {
     // 1. Marcar como leída visualmente de inmediato (UI optimista)
