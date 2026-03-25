@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import logoMenu from '../assets/Logomenu.png';
+import { useNotificationStore } from '../store/notificationStore';
 
 const menuItems = [
   {
@@ -30,7 +31,7 @@ const menuItems = [
     ),
   },
   {
-    label: 'Catálogo de Actos',
+    label: 'Catalogo de Actos',
     path: '/acts',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -39,7 +40,7 @@ const menuItems = [
     ),
   },
   {
-    label: 'Historial de Auditoría',
+    label: 'Historial de Auditoria',
     path: '/auditoria',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -60,6 +61,7 @@ const menuItems = [
 
 export const Sidebar = () => {
   const navigate = useNavigate();
+  const { unreadCount } = useNotificationStore();
 
   const handleLogout = () => {
     navigate('/login');
@@ -68,7 +70,7 @@ export const Sidebar = () => {
   return (
     <aside className="w-64 flex-shrink-0 bg-sidebar flex flex-col text-white">
       <div className="flex items-center justify-center py-6 px-4">
-        <img src={logoMenu} alt="Notaría 178" className="h-16 object-contain" />
+        <img src={logoMenu} alt="Notaria 178" className="h-16 object-contain" />
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 px-3 mt-2">
@@ -88,6 +90,28 @@ export const Sidebar = () => {
             {item.label}
           </NavLink>
         ))}
+
+        {/* Enlace de Notificaciones con badge */}
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-sidebar-active/80 font-semibold text-white'
+                : 'text-white/80 hover:bg-sidebar-active/40 hover:text-white'
+            }`
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+          </svg>
+          <span className="flex-1">Notificaciones</span>
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold bg-red-500 text-white rounded-full">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </NavLink>
       </nav>
 
       <div className="px-3 pb-6">
@@ -98,7 +122,7 @@ export const Sidebar = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
           </svg>
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </div>
     </aside>

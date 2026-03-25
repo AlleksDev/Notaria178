@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios';
 import { Input } from '../../../components/Input';
 import { useAuthStore } from '../../../store/authStore';
 import { loginRequest } from '../api/login';
+import { usePushNotifications } from '../../../hooks/usePushNotifications';
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ export const LoginForm = () => {
   
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { requestPermissionAndGetToken } = usePushNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +27,11 @@ export const LoginForm = () => {
 
       setAuth(data.data.user, data.data.token);
       navigate('/home');
+
+      // Registrar token FCM despues de login exitoso (fire-and-forget)
+      requestPermissionAndGetToken().catch((err) =>
+        console.warn('[FCM] No se pudo registrar token push:', err)
+      );
       
     } catch (err) {
       if (isAxiosError(err)) {
@@ -32,7 +39,7 @@ export const LoginForm = () => {
           err.response?.data?.message || 'Error al conectar con el servidor. Verifica tus credenciales.'
         );
       } else {
-        setError('Ocurrió un error inesperado al procesar la solicitud.');
+        setError('Ocurrio un error inesperado al procesar la solicitud.');
       }
     } finally {
       setIsLoading(false);
