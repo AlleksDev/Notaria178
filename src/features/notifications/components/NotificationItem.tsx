@@ -53,15 +53,15 @@ export const NotificationItem = ({ notification, onClick }: NotificationItemProp
   return (
     <div
       onClick={() => onClick(notification)}
-      className={`relative flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-md ${
-        isUnread 
-          ? 'bg-blue-50/30 border-blue-200 hover:border-blue-300' 
-          : 'bg-white border-gray-100 hover:border-gray-200'
+      className={`group relative flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+        isUnread
+          ? 'bg-blue-50/50 border-blue-200 hover:border-blue-300 hover:shadow-md'
+          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
       }`}
     >
       {/* Indicador lateral de no leído */}
       {isUnread && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-blue-500 rounded-r-full" />
       )}
 
       {renderIcon()}
@@ -75,11 +75,11 @@ export const NotificationItem = ({ notification, onClick }: NotificationItemProp
           )}
           <span className="text-xs text-gray-500 whitespace-nowrap">{timeAgo}</span>
         </div>
-        
-        <p className={`text-sm line-clamp-2 ${isUnread ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+
+        <p className={`text-sm line-clamp-2 ${isUnread ? 'text-gray-800' : 'text-gray-600'}`}>
           {notification.message}
         </p>
-        
+
         {notification.body && (
           <p className="mt-1 text-xs text-gray-400 line-clamp-1">
             {notification.body}
@@ -87,9 +87,9 @@ export const NotificationItem = ({ notification, onClick }: NotificationItemProp
         )}
       </div>
 
-      {/* Punto azul pequeño para no leídos (opcional, como refuerzo visual) */}
+      {/* Punto azul pequeño para no leídos */}
       {isUnread && (
-        <div className="flex-shrink-0 w-2.5 h-2.5 mt-1.5 rounded-full bg-blue-500 shadow-sm" />
+        <div className="flex-shrink-0 w-2.5 h-2.5 mt-1.5 rounded-full bg-blue-500 shadow-sm ring-2 ring-blue-100" />
       )}
     </div>
   );

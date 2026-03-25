@@ -11,6 +11,8 @@ interface GlobalFiltersProps {
   onDateChange?: (val: string) => void;
   onLocationChange?: (val: string) => void;
   onSortChange?: (val: string) => void;
+  hideBranchFilter?: boolean;
+  hideAttendanceButton?: boolean;
 }
 
 const TIMEFRAME_OPTIONS = [
@@ -28,13 +30,15 @@ const SORT_OPTIONS = [
   { value: 'asc', label: 'Más antiguos' },
 ];
 
-export const GlobalFilters = ({ 
-  timeframe = 'month', 
+export const GlobalFilters = ({
+  timeframe = 'month',
   branchId = '',
   sort = 'desc',
   onDateChange,
   onLocationChange,
-  onSortChange
+  onSortChange,
+  hideBranchFilter = false,
+  hideAttendanceButton = false
 }: GlobalFiltersProps) => {
 
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
@@ -101,7 +105,7 @@ export const GlobalFilters = ({
     <div className="flex items-center gap-3">
       {/* Date Filter Dropdown */}
       <div className="relative" ref={timeframeRef}>
-        <button 
+        <button
           onClick={() => {
             setIsTimeframeOpen(!isTimeframeOpen);
             setIsLocationOpen(false);
@@ -133,47 +137,49 @@ export const GlobalFilters = ({
       </div>
 
       {/* Location Filter Dropdown */}
-      <div className="relative" ref={locationRef}>
-        <button 
-          onClick={() => {
-            setIsLocationOpen(!isLocationOpen);
-            setIsTimeframeOpen(false);
-            setIsSortOpen(false);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-primary/30 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 transition-colors focus:outline-none"
-        >
-          <Globe className="w-4 h-4" />
-          <span>{formatLocation(branchId)}</span>
-          <ChevronDown className={`w-4 h-4 ml-1 opacity-70 transition-transform duration-200 ${isLocationOpen ? 'rotate-180' : ''}`} />
-        </button>
+      {!hideBranchFilter && (
+        <div className="relative" ref={locationRef}>
+          <button
+            onClick={() => {
+              setIsLocationOpen(!isLocationOpen);
+              setIsTimeframeOpen(false);
+              setIsSortOpen(false);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-primary/30 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 transition-colors focus:outline-none"
+          >
+            <Globe className="w-4 h-4" />
+            <span>{formatLocation(branchId)}</span>
+            <ChevronDown className={`w-4 h-4 ml-1 opacity-70 transition-transform duration-200 ${isLocationOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-        {isLocationOpen && (
-          <div className="absolute top-full mt-2 right-0 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-            {isLoadingBranches ? (
-              <div className="flex items-center justify-center p-3 text-gray-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </div>
-            ) : (
-              locationOptions.map((option) => (
-                <button
-                  key={option.value}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${(branchId || '') === option.value ? 'font-bold text-primary bg-primary/5' : 'text-gray-700 font-medium'}`}
-                  onClick={() => {
-                    onLocationChange?.(option.value);
-                    setIsLocationOpen(false);
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+          {isLocationOpen && (
+            <div className="absolute top-full mt-2 right-0 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+              {isLoadingBranches ? (
+                <div className="flex items-center justify-center p-3 text-gray-400">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                </div>
+              ) : (
+                locationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${(branchId || '') === option.value ? 'font-bold text-primary bg-primary/5' : 'text-gray-700 font-medium'}`}
+                    onClick={() => {
+                      onLocationChange?.(option.value);
+                      setIsLocationOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Sort Dropdown */}
       <div className="relative" ref={sortRef}>
-        <button 
+        <button
           onClick={() => {
             setIsSortOpen(!isSortOpen);
             setIsTimeframeOpen(false);
@@ -206,13 +212,15 @@ export const GlobalFilters = ({
       </div>
 
       {/* Attendance Button */}
-      <button
-        onClick={() => setIsAttendanceModalOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors focus:outline-none"
-      >
-        <UserCheck className="w-4 h-4" />
-        <span>Asistencia</span>
-      </button>
+      {!hideAttendanceButton && (
+        <button
+          onClick={() => setIsAttendanceModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors focus:outline-none"
+        >
+          <UserCheck className="w-4 h-4" />
+          <span>Asistencia</span>
+        </button>
+      )}
 
       {/* Attendance Modal */}
       <AttendanceModal
