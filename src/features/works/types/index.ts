@@ -111,3 +111,36 @@ export interface CreateWorkRequest {
   deadline?: string;
 }
 
+// ─── Tipos para comentarios en tiempo real ─────────────────────────────────
+
+export interface WorkComment {
+  id: string;
+  work_id: string;
+  user_id: string;
+  user_name: string;
+  message: string;
+  created_at: string;
+}
+
+export type WSMessageType = 'comment' | 'typing' | 'history' | 'error' | 'join_room' | 'leave_room';
+
+export interface WSMessage<T = unknown> {
+  type: WSMessageType;
+  room_id?: string;
+  payload: T;
+  timestamp: string;
+}
+
+export interface CommentPayload {
+  id: string;
+  work_id: string;
+  user_id: string;
+  user_name: string;
+  message: string;
+  created_at: string;
+}
+
+export interface WSErrorPayload {
+  error: string;
+}
+

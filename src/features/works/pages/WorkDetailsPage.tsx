@@ -40,9 +40,12 @@ import {
   updateWorkStatus
 } from '../api/worksApi';
 import { searchActs } from '../../acts/api';
-import type { WorkDetail, WorkDocument } from '../types';
+import type { WorkDetail, WorkDocument, WorkComment } from '../types';
 import type { Act } from '../../acts/types';
 import { ConfirmModal } from '../../../components/ConfirmModal';
+import { CommentsSection } from '../components/CommentsSection';
+import { useCommentNotifications } from '../hooks/useCommentNotifications';
+import { useAuthStore } from '../../../store/authStore';
 
 /* ─── Status config ─── */
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -56,7 +59,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 /* ─── Tab definitions ─── */
 const TABS = [
   { key: 'documento', label: 'Documento', icon: FileText },
-  { key: 'comentarios', label: 'Comentarios', count: 3, icon: MessageSquare },
+  { key: 'comentarios', label: 'Comentarios', icon: MessageSquare },
   { key: 'historial', label: 'Historial de versiones', icon: History },
 ] as const;
 
@@ -112,6 +115,7 @@ const isPdf = (fileName: string) =>
 export const WorkDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
 
   /* ─── Core state ─── */
   const [work, setWork] = useState<WorkDetail | null>(null);
@@ -484,6 +488,57 @@ export const WorkDetailsPage = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabKey>('documento');
+  const [unreadCommentsCount, setUnreadCommentsCount] = useState(0);
+  const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
+
+  // Cargar último mensaje leído desde localStorage al montar
+  useEffect(() => {
+    if (!id) return;
+    const key = `work_${id}_last_read_message`;
+    const savedId = localStorage.getItem(key);
+    setLastReadMessageId(savedId);
+  }, [id]);
+
+  // Guardar último mensaje leído en localStorage
+  const handleMarkAsRead = useCallback((messageId: string) => {
+    if (!id) return;
+    const key = `work_${id}_last_read_message`;
+    localStorage.setItem(key, messageId);
+    setLastReadMessageId(messageId);
+    setUnreadCommentsCount(0); // Resetear contador
+  }, [id]);
+
+  // Handler para cambiar de tab
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    setActiveTab(tabKey);
+    // Resetear contador cuando el usuario va al tab de comentarios
+    if (tabKey === 'comentarios') {
+      setUnreadCommentsCount(0);
+    }
+  }, []);
+
+  // Ref para saber si estamos en el tab de comentarios (para el callback)
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Handler para nuevos comentarios - solo contar si NO estamos viendo comentarios y NO es nuestro mensaje
+  const handleNewCommentIfNotViewing = useCallback((comment: WorkComment, isOwnMessage: boolean) => {
+    // No contar mensajes propios
+    if (isOwnMessage) return;
+    // No contar si estamos viendo el tab de comentarios
+    if (activeTabRef.current !== 'comentarios') {
+      setUnreadCommentsCount((prev) => prev + 1);
+    }
+  }, []);
+
+  // Hook ligero que SIEMPRE escucha notificaciones (independiente de si el tab está visible)
+  useCommentNotifications({
+    workId: id || null,
+    enabled: true,
+    onNewComment: handleNewCommentIfNotViewing,
+  });
 
   /* ─── Initial data fetch ─── */
   useEffect(() => {
@@ -1043,10 +1098,11 @@ export const WorkDetailsPage = () => {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
+              const showBadge = tab.key === 'comentarios' && unreadCommentsCount > 0 && !isActive;
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors relative ${isActive
                     ? 'text-[#740A03]'
                     : 'text-gray-500 hover:text-gray-700'
@@ -1054,9 +1110,9 @@ export const WorkDetailsPage = () => {
                 >
                   <Icon size={16} />
                   {tab.label}
-                  {'count' in tab && (
-                    <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#740A03] text-white text-[10px] font-bold">
-                      {tab.count}
+                  {showBadge && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
+                      {unreadCommentsCount > 9 ? '9+' : unreadCommentsCount}
                     </span>
                   )}
                   {isActive && (
@@ -1067,8 +1123,11 @@ export const WorkDetailsPage = () => {
             })}
           </div>
 
-          {/* ═══ Document Card with Thumbnail ═══ */}
-          {primaryDoc ? (
+          {/* ═══ Tab Content ═══ */}
+          {activeTab === 'documento' && (
+            <>
+              {/* ═══ Document Card with Thumbnail ═══ */}
+              {primaryDoc ? (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               {/* Header: file info + actions */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -1206,6 +1265,26 @@ export const WorkDetailsPage = () => {
                   className="w-full h-full max-w-[90vw] max-h-[90vh] rounded-lg border-0 bg-white"
                 />
               </div>
+            </div>
+          )}
+            </>
+          )}
+
+          {/* ═══ Comments Tab (solo se monta cuando está activo - optimización de WebSocket) ═══ */}
+          {activeTab === 'comentarios' && work && (
+            <CommentsSection
+              workId={work.id}
+              lastReadMessageId={lastReadMessageId}
+              onMarkAsRead={handleMarkAsRead}
+            />
+          )}
+
+          {/* ═══ History Tab ═══ */}
+          {activeTab === 'historial' && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <p className="text-sm text-gray-400 text-center">
+                Historial de versiones próximamente disponible.
+              </p>
             </div>
           )}
         </div>
