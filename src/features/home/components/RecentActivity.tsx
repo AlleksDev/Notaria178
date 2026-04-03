@@ -50,7 +50,7 @@ const getEntityLabel = (entity: string) => {
     case 'ACT':
       return 'Acto';
     case 'BRANCH':
-      return 'Sucursal';
+      return 'Oficina';
     default:
       return entity;
   }
@@ -99,7 +99,7 @@ export const RecentActivity = ({ data, isLoading, error }: RecentActivityProps) 
             const info = getActionInfo(activity.action);
 
             // Build description parts
-            let description = info.text;
+            const description = info.text;
             let details = '';
 
             if (!info.noTarget) {

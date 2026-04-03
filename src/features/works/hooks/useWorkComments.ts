@@ -156,7 +156,7 @@ export const useWorkComments = ({ workId, enabled = true, onNewComment }: UseWor
         id: `temp-${Date.now()}`, // ID temporal
         work_id: workId,
         user_id: user.id,
-        user_name: user.name,
+        user_name: user.full_name,
         message: message.trim(),
         created_at: new Date().toISOString(),
       };

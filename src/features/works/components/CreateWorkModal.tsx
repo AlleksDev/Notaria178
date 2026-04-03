@@ -473,10 +473,10 @@ export const CreateWorkModal = ({
             </div>
           </div>
 
-          {/* ═══════ SUCURSAL ═══════ */}
+          {/* ══════ OFICINA ═══════ */}
           <div className="mb-6">
             <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-              Sucursal <span className="text-red-500">*</span>
+              Oficina <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <select
@@ -489,7 +489,7 @@ export const CreateWorkModal = ({
                   errors.branch ? inputErr : inputOk
                 }`}
               >
-                <option value="">Selecciona una sucursal</option>
+                <option value="">Selecciona una oficina</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -530,7 +530,7 @@ export const CreateWorkModal = ({
                       placeholder={
                         branchId
                           ? "Buscar por nombre..."
-                          : "Selecciona una sucursal primero para buscar"
+                          : "Selecciona una oficina primero para buscar"
                       }
                     />
                     <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" strokeWidth={1.5} />
@@ -545,7 +545,7 @@ export const CreateWorkModal = ({
                         </div>
                       ) : !branchId ? (
                         <p className="text-sm text-gray-400 py-6 text-center">
-                          Selecciona una sucursal primero
+                          Selecciona una oficina primero
                         </p>
                       ) : filteredDrafters.length === 0 ? (
                         <p className="text-sm text-gray-400 py-6 text-center">

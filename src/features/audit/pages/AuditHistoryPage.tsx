@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { useAuditHistory } from '../hooks/useAuditHistory';
 import type { AuditLogAction } from '../types';
 import { GlobalSearch } from '../../../components/GlobalSearch';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 
 // Utility: format entity_id date from folio or created_at
@@ -53,6 +54,7 @@ const buildTarget = (item: AuditLogAction): string => {
 };
 
 export default function AuditHistoryPage() {
+  const { isAdmin } = usePermissions();
   const { 
     timelineData, metricsData, isLoading, error, 
     page, setPage, activeTab, setActiveTab, totalPages
@@ -244,18 +246,22 @@ export default function AuditHistoryPage() {
         <div className="flex-1 w-full max-w-[500px]">
           <GlobalSearch onSearch={handleSearch} />
         </div>
-        <div className="flex-shrink-0 sm:ml-auto flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-primary/30 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 transition-colors focus:outline-none whitespace-nowrap h-10">
-            <Globe className="w-4 h-4" />
-            <span>Vista global</span>
-            <ChevronDown className="w-4 h-4 ml-1 opacity-70" />
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="flex-shrink-0 sm:ml-auto flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-primary/30 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 transition-colors focus:outline-none whitespace-nowrap h-10">
+              <Globe className="w-4 h-4" />
+              <span>Vista global</span>
+              <ChevronDown className="w-4 h-4 ml-1 opacity-70" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Title & Divider */}
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-600 shrink-0">Historial de auditoría</h1>
+        <h1 className="text-2xl font-bold text-gray-600 shrink-0">
+          {isAdmin ? 'Historial de auditoría' : 'Mi historial de actividad'}
+        </h1>
       </div>
 
       {/* Controls (Tabs & Filtrar) */}

@@ -1,8 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import logoMenu from '../assets/Logomenu.png';
 import { useNotificationStore } from '../store/notificationStore';
+import { usePermissions } from '../hooks/usePermissions';
 
-const menuItems = [
+interface MenuItem {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  adminOnly?: boolean;
+}
+
+const menuItems: MenuItem[] = [
   {
     label: 'Panel de control',
     path: '/home',
@@ -24,6 +32,7 @@ const menuItems = [
   {
     label: 'Proyectistas',
     path: '/proyectistas',
+    adminOnly: true,
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
@@ -33,6 +42,7 @@ const menuItems = [
   {
     label: 'Catalogo de Actos',
     path: '/acts',
+    adminOnly: true,
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 9H7v-2h6v2zm4 4H7v-2h10v2zm0 4H7v-2h10v2zM13 9V3.5L18.5 9H13z" />
@@ -62,10 +72,14 @@ const menuItems = [
 export const Sidebar = () => {
   const navigate = useNavigate();
   const { unreadCount } = useNotificationStore();
+  const { isAdmin } = usePermissions();
 
   const handleLogout = () => {
     navigate('/login');
   };
+
+  // Filtrar items según permisos
+  const visibleItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="w-64 flex-shrink-0 bg-sidebar flex flex-col text-white">
@@ -74,7 +88,7 @@ export const Sidebar = () => {
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 px-3 mt-2">
-        {menuItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

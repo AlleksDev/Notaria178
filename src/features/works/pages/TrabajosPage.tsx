@@ -15,6 +15,7 @@ import { useWorks } from '../hooks/useWorks';
 import { useWorkStats } from '../hooks/useWorkStats';
 import { getWorkDetail } from '../api/worksApi';
 import { timeframeToDateRange } from '../../../utils/dateUtils';
+import { usePermissions } from '../../../hooks/usePermissions';
 import type { WorkStatus, WorkDetail } from '../types';
 
 const ITEMS_PER_PAGE = 8;
@@ -61,6 +62,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }>
 
 export const TrabajosPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('folio');
   const [statusTab, setStatusTab] = useState<StatusTab>('');
@@ -254,6 +256,7 @@ export const TrabajosPage = () => {
             onLocationChange={handleBranchChange}
             onDateChange={handleTimeframeChange}
             onSortChange={handleSortChange}
+            hideBranchFilter={!isAdmin}
           />
         </div>
       </div>

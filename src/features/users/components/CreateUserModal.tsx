@@ -280,7 +280,7 @@ export const CreateUserModal = ({
             </div>
           </div>
 
-          {/* ROL + SUCURSAL - 2 columns */}
+          {/* ROL + OFICINA - 2 columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mb-5">
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
@@ -308,7 +308,7 @@ export const CreateUserModal = ({
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                Sucursal <span className="text-red-500">*</span>
+                Oficina <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
@@ -319,7 +319,7 @@ export const CreateUserModal = ({
                     errors.branch_id ? inputErr : inputOk
                   }`}
                 >
-                  <option value="">Selecciona una sucursal</option>
+                  <option value="">Selecciona una oficina</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}

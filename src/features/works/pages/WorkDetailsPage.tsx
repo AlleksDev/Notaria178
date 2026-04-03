@@ -676,7 +676,7 @@ export const WorkDetailsPage = () => {
               </dd>
             </div>
             <div className="flex items-baseline gap-3">
-              <dt className="text-gray-400 min-w-[100px] flex-shrink-0">Sucursal</dt>
+              <dt className="text-gray-400 min-w-[100px] flex-shrink-0">Oficina</dt>
               <dd className="font-semibold text-gray-700">{work.branch_name || '—'}</dd>
             </div>
             <div className="flex items-baseline gap-3">

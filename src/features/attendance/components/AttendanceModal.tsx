@@ -119,12 +119,12 @@ export const AttendanceModal = ({ isOpen, onClose }: AttendanceModalProps) => {
       case 'checked_in':
         return {
           icon: LogOut,
-          iconBg: 'bg-amber-100',
-          iconColor: 'text-amber-600',
+          iconBg: 'bg-primary/10',
+          iconColor: 'text-primary',
           title: 'Registrar Salida',
           subtitle: `Entrada registrada a las ${todayRecord ? formatTime(todayRecord.check_in_time) : '--:--'}`,
           buttonText: 'Marcar Salida',
-          buttonClass: 'bg-amber-600 hover:bg-amber-700',
+          buttonClass: 'bg-primary hover:bg-primary/90',
           canSubmit: true,
         };
       case 'completed':
