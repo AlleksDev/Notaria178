@@ -6,6 +6,7 @@ interface UsersTableProps {
   isLoading: boolean;
   error: Error | null;
   currentUserEmail?: string;
+  canManageUsers?: boolean;
   onEdit: (user: Proyectista) => void;
   onDeactivate: (user: Proyectista) => void;
 }
@@ -67,6 +68,7 @@ export const UsersTable = ({
   isLoading,
   error,
   currentUserEmail,
+  canManageUsers = true,
   onEdit,
   onDeactivate,
 }: UsersTableProps) => {
@@ -207,20 +209,31 @@ export const UsersTable = ({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => onEdit(user)}
-                      className="p-2 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
-                      title="Editar"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    {user.status === 'INACTIVE' || (currentUserEmail && user.email === currentUserEmail) ? (
+                    {canManageUsers ? (
+                      <button
+                        onClick={() => onEdit(user)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    ) : (
+                      <span
+                        className="p-2 rounded-lg text-gray-300 cursor-not-allowed"
+                        title="Solo administradores pueden realizar esta acción"
+                      >
+                        <Pencil size={16} />
+                      </span>
+                    )}
+                    {!canManageUsers || user.status === 'INACTIVE' || (currentUserEmail && user.email === currentUserEmail) ? (
                       <span
                         className="p-2 rounded-lg text-gray-300 cursor-not-allowed"
                         title={
-                          currentUserEmail && user.email === currentUserEmail
-                            ? 'No puedes desactivar tu propia cuenta'
-                            : 'El usuario ya está inactivo'
+                          !canManageUsers
+                            ? 'Solo administradores pueden realizar esta acción'
+                            : currentUserEmail && user.email === currentUserEmail
+                              ? 'No puedes desactivar tu propia cuenta'
+                              : 'El usuario ya está inactivo'
                         }
                       >
                         <UserX size={16} />

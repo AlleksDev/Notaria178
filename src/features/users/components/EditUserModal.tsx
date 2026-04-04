@@ -7,6 +7,7 @@ import type { Proyectista, UpdateProyectistaRequest } from '../types';
 interface EditUserModalProps {
   isOpen: boolean;
   user: Proyectista | null;
+  currentUserEmail?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -45,9 +46,12 @@ const parseISOToTimeInput = (raw?: string): string => {
 export const EditUserModal = ({
   isOpen,
   user,
+  currentUserEmail,
   onClose,
   onSuccess,
 }: EditUserModalProps) => {
+  // Detect if editing own account
+  const isEditingSelf = !!(currentUserEmail && user && user.email === currentUserEmail);
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -287,7 +291,8 @@ export const EditUserModal = ({
                 <select
                   value={form.role}
                   onChange={(e) => updateField('role', e.target.value)}
-                  className={`${inputBase} ${inputOk} appearance-none cursor-pointer pr-8`}
+                  disabled={isEditingSelf}
+                  className={`${inputBase} ${inputOk} appearance-none pr-8 ${isEditingSelf ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                 >
                   {ROLE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -297,6 +302,9 @@ export const EditUserModal = ({
                 </select>
                 <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
+              {isEditingSelf && (
+                <p className="mt-1 text-xs text-gray-400">No puedes cambiar tu propio rol</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
@@ -306,7 +314,8 @@ export const EditUserModal = ({
                 <select
                   value={form.status}
                   onChange={(e) => updateField('status', e.target.value)}
-                  className={`${inputBase} ${inputOk} appearance-none cursor-pointer pr-8`}
+                  disabled={isEditingSelf}
+                  className={`${inputBase} ${inputOk} appearance-none pr-8 ${isEditingSelf ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                 >
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -316,6 +325,9 @@ export const EditUserModal = ({
                 </select>
                 <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
+              {isEditingSelf && (
+                <p className="mt-1 text-xs text-gray-400">No puedes cambiar tu propio estado</p>
+              )}
             </div>
           </div>
 

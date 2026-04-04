@@ -40,9 +40,15 @@ import {
   updateWorkStatus
 } from '../api/worksApi';
 import { searchActs } from '../../acts/api';
-import type { WorkDetail, WorkDocument } from '../types';
+import type { WorkDetail, WorkDocument, WorkComment } from '../types';
 import type { Act } from '../../acts/types';
 import { ConfirmModal } from '../../../components/ConfirmModal';
+import { StatusChangeModal } from '../../../components/StatusChangeModal';
+import { CommentsSection } from '../components/CommentsSection';
+import { useCommentNotifications } from '../hooks/useCommentNotifications';
+import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 /* ─── Status config ─── */
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -56,7 +62,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 /* ─── Tab definitions ─── */
 const TABS = [
   { key: 'documento', label: 'Documento', icon: FileText },
-  { key: 'comentarios', label: 'Comentarios', count: 3, icon: MessageSquare },
+  { key: 'comentarios', label: 'Comentarios', icon: MessageSquare },
   { key: 'historial', label: 'Historial de versiones', icon: History },
 ] as const;
 
@@ -112,6 +118,7 @@ const isPdf = (fileName: string) =>
 export const WorkDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
 
   /* ─── Core state ─── */
   const [work, setWork] = useState<WorkDetail | null>(null);
@@ -157,6 +164,9 @@ export const WorkDetailsPage = () => {
   const [clientFormErrors, setClientFormErrors] = useState<{ phone?: string; email?: string }>({});
 
   const [isSendingReview, setIsSendingReview] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [pendingStatusAction, setPendingStatusAction] = useState<{ status: string; actionWord: string; label: string; message: string } | null>(null);
+  const { isSuperAdmin } = usePermissions();
 
   const isClientFormDirty = useMemo(() => {
     const ci = work?.client_info;
@@ -468,6 +478,32 @@ export const WorkDetailsPage = () => {
     }
   }, [id, refreshWork]);
 
+  /* ─── Notario: Aprobar / Rechazar / Pendiente ─── */
+  const handleStatusChange = useCallback(async (newStatus: string) => {
+    if (!id) return;
+    try {
+      setIsChangingStatus(true);
+      await updateWorkStatus(id, newStatus);
+      await refreshWork();
+    } catch (err) {
+      console.error('Error al cambiar estado:', err);
+    } finally {
+      setIsChangingStatus(false);
+      setPendingStatusAction(null);
+    }
+  }, [id, refreshWork]);
+
+  /* ─── Confirm modal handler ─── */
+  const handleConfirmStatusAction = useCallback(async () => {
+    if (!pendingStatusAction) return;
+    if (pendingStatusAction.status === 'READY_FOR_REVIEW') {
+      await handleSendToReview();
+      setPendingStatusAction(null);
+    } else {
+      await handleStatusChange(pendingStatusAction.status);
+    }
+  }, [pendingStatusAction, handleSendToReview, handleStatusChange]);
+
   /* ─── Search act catalog ─── */
   const handleSearchActs = useCallback(async (term: string) => {
     setActSearchTerm(term);
@@ -484,6 +520,52 @@ export const WorkDetailsPage = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabKey>('documento');
+  const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
+  const { getUnreadCountForWork, notifications, markAsRead: markNotificationAsRead } = useNotificationStore();
+
+  const unreadCommentsCount = id ? getUnreadCountForWork(id) : 0;
+
+  // Cargar último mensaje leído desde localStorage al montar
+  useEffect(() => {
+    if (!id) return;
+    const key = `work_${id}_last_read_message`;
+    const savedId = localStorage.getItem(key);
+    setLastReadMessageId(savedId);
+  }, [id]);
+
+  // Guardar último mensaje leído en localStorage
+  const handleMarkAsRead = useCallback((messageId: string) => {
+    if (!id) return;
+    const key = `work_${id}_last_read_message`;
+    localStorage.setItem(key, messageId);
+    setLastReadMessageId(messageId);
+
+    notifications
+      .filter(n => n.work_id === id && !n.is_read && n.type === 'NEW_COMMENT')
+      .forEach(n => markNotificationAsRead(n.id));
+  }, [id, notifications, markNotificationAsRead]);
+
+  // Handler para cambiar de tab
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    setActiveTab(tabKey);
+    if (tabKey === 'comentarios' && id) {
+      notifications
+        .filter(n => n.work_id === id && !n.is_read && n.type === 'NEW_COMMENT')
+        .forEach(n => markNotificationAsRead(n.id));
+    }
+  }, [id, notifications, markNotificationAsRead]);
+
+  // Ref para saber si estamos en el tab de comentarios (para el callback)
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Hook ligero que SIEMPRE escucha notificaciones
+  useCommentNotifications({
+    workId: id || null,
+    enabled: true,
+  });
 
   /* ─── Initial data fetch ─── */
   useEffect(() => {
@@ -625,7 +707,7 @@ export const WorkDetailsPage = () => {
               </dd>
             </div>
             <div className="flex items-baseline gap-3">
-              <dt className="text-gray-400 min-w-[100px] flex-shrink-0">Sucursal</dt>
+              <dt className="text-gray-400 min-w-[100px] flex-shrink-0">Oficina</dt>
               <dd className="font-semibold text-gray-700">{work.branch_name || '—'}</dd>
             </div>
             <div className="flex items-baseline gap-3">
@@ -1015,16 +1097,66 @@ export const WorkDetailsPage = () => {
           </div>
         </div>
 
-        {/* Right side */}
-        {!isApproved && work.status !== 'READY_FOR_REVIEW' && (
+        {/* Right side — action buttons based on role and status */}
+        {!isApproved && !isSuperAdmin && work.status !== 'READY_FOR_REVIEW' && (
           <button 
-            onClick={handleSendToReview}
+            onClick={() => setPendingStatusAction({
+              status: 'READY_FOR_REVIEW',
+              actionWord: 'Revisión',
+              label: 'Enviar a revisión',
+              message: '¿Estás seguro de enviar este trabajo a revisión? El notario será notificado para revisarlo.',
+            })}
             disabled={isSendingReview}
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#740A03] text-[#740A03] font-semibold text-sm hover:bg-[#740A03]/5 transition-colors self-start sm:self-center disabled:opacity-50"
           >
             {isSendingReview ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
             Enviar a revisión
           </button>
+        )}
+
+        {/* Notario: Aprobar / Rechazar / Pendiente (solo en READY_FOR_REVIEW) */}
+        {isSuperAdmin && work.status === 'READY_FOR_REVIEW' && (
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'APPROVED',
+                actionWord: 'Aprobación',
+                label: 'Aprobar trabajo',
+                message: '¿Estás seguro de aprobar este trabajo? Esta acción lo marcará como finalizado.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle size={14} />
+              Aprobar
+            </button>
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'REJECTED',
+                actionWord: 'Rechazo',
+                label: 'Rechazar trabajo',
+                message: '¿Estás seguro de rechazar este trabajo? El proyectista será notificado.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-hover transition-colors disabled:opacity-50"
+            >
+              <X size={14} />
+              Rechazar
+            </button>
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'PENDING',
+                actionWord: 'Pendiente',
+                label: 'Marcar como pendiente',
+                message: '¿Estás seguro de devolver este trabajo como pendiente? El proyectista deberá realizar correcciones.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-amber-500 text-amber-600 font-semibold text-sm hover:bg-amber-50 transition-colors disabled:opacity-50"
+            >
+              <AlertCircle size={14} />
+              Pendiente
+            </button>
+          </div>
         )}
       </div>
 
@@ -1043,10 +1175,11 @@ export const WorkDetailsPage = () => {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
+              const showBadge = tab.key === 'comentarios' && unreadCommentsCount > 0 && !isActive;
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors relative ${isActive
                     ? 'text-[#740A03]'
                     : 'text-gray-500 hover:text-gray-700'
@@ -1054,9 +1187,9 @@ export const WorkDetailsPage = () => {
                 >
                   <Icon size={16} />
                   {tab.label}
-                  {'count' in tab && (
-                    <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#740A03] text-white text-[10px] font-bold">
-                      {tab.count}
+                  {showBadge && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
+                      {unreadCommentsCount > 9 ? '9+' : unreadCommentsCount}
                     </span>
                   )}
                   {isActive && (
@@ -1067,8 +1200,11 @@ export const WorkDetailsPage = () => {
             })}
           </div>
 
-          {/* ═══ Document Card with Thumbnail ═══ */}
-          {primaryDoc ? (
+          {/* ═══ Tab Content ═══ */}
+          {activeTab === 'documento' && (
+            <>
+              {/* ═══ Document Card with Thumbnail ═══ */}
+              {primaryDoc ? (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               {/* Header: file info + actions */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -1206,6 +1342,26 @@ export const WorkDetailsPage = () => {
                   className="w-full h-full max-w-[90vw] max-h-[90vh] rounded-lg border-0 bg-white"
                 />
               </div>
+            </div>
+          )}
+            </>
+          )}
+
+          {/* ═══ Comments Tab (solo se monta cuando está activo - optimización de WebSocket) ═══ */}
+          {activeTab === 'comentarios' && work && (
+            <CommentsSection
+              workId={work.id}
+              lastReadMessageId={lastReadMessageId}
+              onMarkAsRead={handleMarkAsRead}
+            />
+          )}
+
+          {/* ═══ History Tab ═══ */}
+          {activeTab === 'historial' && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <p className="text-sm text-gray-400 text-center">
+                Historial de versiones próximamente disponible.
+              </p>
             </div>
           )}
         </div>
@@ -1510,6 +1666,17 @@ export const WorkDetailsPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── Status change confirmation modal ── */}
+      <StatusChangeModal
+        isOpen={!!pendingStatusAction}
+        actionWord={pendingStatusAction?.actionWord ?? ''}
+        message={pendingStatusAction?.message ?? ''}
+        confirmLabel={pendingStatusAction?.label ?? 'Confirmar'}
+        isLoading={isSendingReview || isChangingStatus}
+        onConfirm={handleConfirmStatusAction}
+        onCancel={() => setPendingStatusAction(null)}
+      />
     </div>
   );
 };
