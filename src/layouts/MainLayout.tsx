@@ -9,13 +9,18 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const MainLayout = () => {
-  const { mergeNotifications } = useNotificationStore();
-  const { token: jwtToken } = useAuthStore();
+  const { setNotifications, ensureOwner } = useNotificationStore();
+  const { token: jwtToken, user } = useAuthStore();
 
   useFCMListener();
 
+  // Single effect: ensure owner + sync notifications from server.
+  // Depends on user?.id so it re-runs on every account switch.
   useEffect(() => {
-    if (!jwtToken) return;
+    if (!jwtToken || !user?.id) return;
+
+    // Wipe stale data if a different user logged in
+    ensureOwner(user.id);
 
     const syncNotifications = async () => {
       try {
@@ -24,11 +29,8 @@ export const MainLayout = () => {
         });
 
         const notifications = response.data.data || [];
-        mergeNotifications(notifications);
-
-        console.log('[MainLayout] Notificaciones sincronizadas:', {
-          total: notifications.length,
-        });
+        // Replace (not merge) so we always reflect the server truth
+        setNotifications(notifications);
       } catch (err) {
         console.error('[MainLayout] Error sincronizando notificaciones:', err);
       }
@@ -39,7 +41,7 @@ export const MainLayout = () => {
     const interval = setInterval(syncNotifications, 60000);
 
     return () => clearInterval(interval);
-  }, [jwtToken, mergeNotifications]);
+  }, [jwtToken, user?.id, setNotifications, ensureOwner]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-dashboard-bg">

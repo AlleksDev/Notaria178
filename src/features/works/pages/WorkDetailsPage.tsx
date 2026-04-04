@@ -43,10 +43,12 @@ import { searchActs } from '../../acts/api';
 import type { WorkDetail, WorkDocument, WorkComment } from '../types';
 import type { Act } from '../../acts/types';
 import { ConfirmModal } from '../../../components/ConfirmModal';
+import { StatusChangeModal } from '../../../components/StatusChangeModal';
 import { CommentsSection } from '../components/CommentsSection';
 import { useCommentNotifications } from '../hooks/useCommentNotifications';
 import { useAuthStore } from '../../../store/authStore';
 import { useNotificationStore } from '../../../store/notificationStore';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 /* ─── Status config ─── */
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -162,6 +164,9 @@ export const WorkDetailsPage = () => {
   const [clientFormErrors, setClientFormErrors] = useState<{ phone?: string; email?: string }>({});
 
   const [isSendingReview, setIsSendingReview] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [pendingStatusAction, setPendingStatusAction] = useState<{ status: string; actionWord: string; label: string; message: string } | null>(null);
+  const { isSuperAdmin } = usePermissions();
 
   const isClientFormDirty = useMemo(() => {
     const ci = work?.client_info;
@@ -472,6 +477,32 @@ export const WorkDetailsPage = () => {
       setIsSendingReview(false);
     }
   }, [id, refreshWork]);
+
+  /* ─── Notario: Aprobar / Rechazar / Pendiente ─── */
+  const handleStatusChange = useCallback(async (newStatus: string) => {
+    if (!id) return;
+    try {
+      setIsChangingStatus(true);
+      await updateWorkStatus(id, newStatus);
+      await refreshWork();
+    } catch (err) {
+      console.error('Error al cambiar estado:', err);
+    } finally {
+      setIsChangingStatus(false);
+      setPendingStatusAction(null);
+    }
+  }, [id, refreshWork]);
+
+  /* ─── Confirm modal handler ─── */
+  const handleConfirmStatusAction = useCallback(async () => {
+    if (!pendingStatusAction) return;
+    if (pendingStatusAction.status === 'READY_FOR_REVIEW') {
+      await handleSendToReview();
+      setPendingStatusAction(null);
+    } else {
+      await handleStatusChange(pendingStatusAction.status);
+    }
+  }, [pendingStatusAction, handleSendToReview, handleStatusChange]);
 
   /* ─── Search act catalog ─── */
   const handleSearchActs = useCallback(async (term: string) => {
@@ -1066,16 +1097,66 @@ export const WorkDetailsPage = () => {
           </div>
         </div>
 
-        {/* Right side */}
-        {!isApproved && work.status !== 'READY_FOR_REVIEW' && (
+        {/* Right side — action buttons based on role and status */}
+        {!isApproved && !isSuperAdmin && work.status !== 'READY_FOR_REVIEW' && (
           <button 
-            onClick={handleSendToReview}
+            onClick={() => setPendingStatusAction({
+              status: 'READY_FOR_REVIEW',
+              actionWord: 'Revisión',
+              label: 'Enviar a revisión',
+              message: '¿Estás seguro de enviar este trabajo a revisión? El notario será notificado para revisarlo.',
+            })}
             disabled={isSendingReview}
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#740A03] text-[#740A03] font-semibold text-sm hover:bg-[#740A03]/5 transition-colors self-start sm:self-center disabled:opacity-50"
           >
             {isSendingReview ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
             Enviar a revisión
           </button>
+        )}
+
+        {/* Notario: Aprobar / Rechazar / Pendiente (solo en READY_FOR_REVIEW) */}
+        {isSuperAdmin && work.status === 'READY_FOR_REVIEW' && (
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'APPROVED',
+                actionWord: 'Aprobación',
+                label: 'Aprobar trabajo',
+                message: '¿Estás seguro de aprobar este trabajo? Esta acción lo marcará como finalizado.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle size={14} />
+              Aprobar
+            </button>
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'REJECTED',
+                actionWord: 'Rechazo',
+                label: 'Rechazar trabajo',
+                message: '¿Estás seguro de rechazar este trabajo? El proyectista será notificado.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-hover transition-colors disabled:opacity-50"
+            >
+              <X size={14} />
+              Rechazar
+            </button>
+            <button
+              onClick={() => setPendingStatusAction({
+                status: 'PENDING',
+                actionWord: 'Pendiente',
+                label: 'Marcar como pendiente',
+                message: '¿Estás seguro de devolver este trabajo como pendiente? El proyectista deberá realizar correcciones.',
+              })}
+              disabled={isChangingStatus}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-amber-500 text-amber-600 font-semibold text-sm hover:bg-amber-50 transition-colors disabled:opacity-50"
+            >
+              <AlertCircle size={14} />
+              Pendiente
+            </button>
+          </div>
         )}
       </div>
 
@@ -1585,6 +1666,17 @@ export const WorkDetailsPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── Status change confirmation modal ── */}
+      <StatusChangeModal
+        isOpen={!!pendingStatusAction}
+        actionWord={pendingStatusAction?.actionWord ?? ''}
+        message={pendingStatusAction?.message ?? ''}
+        confirmLabel={pendingStatusAction?.label ?? 'Confirmar'}
+        isLoading={isSendingReview || isChangingStatus}
+        onConfirm={handleConfirmStatusAction}
+        onCancel={() => setPendingStatusAction(null)}
+      />
     </div>
   );
 };

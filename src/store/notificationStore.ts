@@ -1,6 +1,6 @@
 // src/store/notificationStore.ts
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface Notification {
   id: string;
@@ -17,6 +17,8 @@ export interface Notification {
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
+  /** User ID whose notifications are stored – prevents cross-user leaks */
+  _ownerUserId: string | null;
 
   setNotifications: (notifications: Notification[]) => void;
   mergeNotifications: (notifications: Notification[]) => void;
@@ -28,6 +30,10 @@ interface NotificationState {
   resetUnreadCount: () => void;
   updateNotification: (notificationId: string, updates: Partial<Notification>) => void;
   getUnreadCountForWork: (workId: string) => number;
+  /** Call on login / app mount to bind the store to the current user */
+  ensureOwner: (userId: string) => void;
+  /** Call on logout to wipe persisted data */
+  clearAll: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>()(
@@ -35,6 +41,20 @@ export const useNotificationStore = create<NotificationState>()(
     (set, get) => ({
       notifications: [],
       unreadCount: 0,
+      _ownerUserId: null,
+
+      ensureOwner: (userId: string) => {
+        const state = get();
+        // If a different user logged in, wipe stale data
+        if (state._ownerUserId && state._ownerUserId !== userId) {
+          set({ notifications: [], unreadCount: 0, _ownerUserId: userId });
+        } else if (!state._ownerUserId) {
+          set({ _ownerUserId: userId });
+        }
+      },
+
+      clearAll: () =>
+        set({ notifications: [], unreadCount: 0, _ownerUserId: null }),
 
       setNotifications: (notifications) => {
         const unread = notifications.filter(n => !n.is_read).length;
@@ -124,9 +144,11 @@ export const useNotificationStore = create<NotificationState>()(
     }),
     {
       name: 'notification-storage',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         notifications: state.notifications.slice(0, 100),
         unreadCount: state.unreadCount,
+        _ownerUserId: state._ownerUserId,
       }),
     }
   )
