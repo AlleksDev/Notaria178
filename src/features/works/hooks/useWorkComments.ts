@@ -18,7 +18,7 @@ export const useWorkComments = ({ workId, enabled = true, onNewComment }: UseWor
   const [justSentMessage, setJustSentMessage] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onNewCommentRef = useRef(onNewComment);
   const { token, user } = useAuthStore();
 
@@ -140,7 +140,10 @@ export const useWorkComments = ({ workId, enabled = true, onNewComment }: UseWor
           })
         );
       }
-      wsRef.current.close();
+      // Evitar cerrar inmediatamente si apenas se está conectando
+      if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+        wsRef.current.close();
+      }
       wsRef.current = null;
     }
   }, [workId]);

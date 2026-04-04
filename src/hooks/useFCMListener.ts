@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { onMessage } from "firebase/messaging";
 import { messaging } from "../config/firebase";
+import { useAuthStore } from "../store/authStore";
 import { useNotificationStore } from "../store/notificationStore";
 
 const playNotificationSound = () => {
@@ -37,6 +38,7 @@ export const useFCMListener = (
   currentWorkId?: string
 ) => {
   const { addNotification } = useNotificationStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload: FCMPayload) => {
@@ -61,6 +63,12 @@ export const useFCMListener = (
           try {
             const commentData: CommentData = JSON.parse(comment);
 
+            // Ignorar notificaciones de mis propios comentarios 
+            // (evita que el autor reciba el push en el frontend si comparte navegador)
+            if (user?.id && commentData.comment_author === user.id) {
+              return;
+            }
+
             if (currentWorkId && work_id === currentWorkId && onNewComment) {
               console.log("[FCM] Inyectando comentario en tiempo real al trabajo actual");
               onNewComment(commentData);
@@ -68,12 +76,14 @@ export const useFCMListener = (
 
             addNotification({
               id: commentData.comment_id,
-              user_id: commentData.comment_author,
+              user_id: user?.id || commentData.comment_author,
               work_id: work_id,
               type: "NEW_COMMENT",
-              title: payload.notification?.title,
+              title: payload.notification?.title || "Nuevo comentario",
               body: payload.notification?.body,
-              message: `${commentData.author_name} comento: ${commentData.message}`,
+              message: commentData.message 
+                ? `${commentData.author_name} comentó: ${commentData.message}` 
+                : (payload.notification?.body || "Nuevo comentario recibido"),
               is_read: false,
               created_at: commentData.created_at,
             });

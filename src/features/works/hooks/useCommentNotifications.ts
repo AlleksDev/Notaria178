@@ -15,7 +15,7 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
   const [isConnected, setIsConnected] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onNewCommentRef = useRef(onNewComment);
   const { token, user } = useAuthStore();
   const { addNotification } = useNotificationStore();
@@ -56,11 +56,11 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
           if (!isOwnMessage) {
             addNotification({
               id: newComment.id,
-              user_id: newComment.user_id,
+              user_id: user?.id || "", // La notificacion pertenece al usuario actual, no al autor
               work_id: workId,
               type: 'NEW_COMMENT',
               title: 'Nuevo comentario',
-              message: `${newComment.full_name || 'Usuario'} comento: ${newComment.content}`,
+              message: `${newComment.user_name || 'Usuario'} comentó: ${newComment.message}`, // Propiedades correctas del backend
               is_read: false,
               created_at: newComment.created_at,
             });
@@ -100,7 +100,10 @@ export const useCommentNotifications = ({ workId, enabled = true, onNewComment }
           })
         );
       }
-      wsRef.current.close();
+      // Evitar cerrar inmediatamente si apenas se está conectando (evita el warning the chrome)
+      if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+        wsRef.current.close();
+      }
       wsRef.current = null;
     }
   }, [workId]);
