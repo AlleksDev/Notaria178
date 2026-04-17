@@ -1,173 +1,383 @@
-<p align="center">
-  <img src="src/assets/Logomenu.png" alt="Notaría 178" width="280" />
-</p>
+# Notaria 178 Frontend
 
-<h1 align="center">Notaría 178 — Sistema de Gestión Notarial</h1>
+SPA privada del sistema de gestion notarial de la Notaria 178.
 
-<p align="center">
-  <em>Plataforma privada para la administración integral de expedientes, actos legales y personal de la Notaría 178.</em>
-</p>
+El frontend actual esta construido con React + TypeScript + Vite y consume la API de `Notaria178_API`. La app ya incluye dashboard, expedientes, catalogo de actos, usuarios, auditoria, perfil, centro de notificaciones, asistencia y comentarios en vivo por WebSocket. Tambien integra Firebase Cloud Messaging para push notifications en foreground y background.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-19.1-61DAFB?logo=react&logoColor=white" />
-  <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/Vite-6.3-646CFF?logo=vite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4?logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-Private-red" />
-</p>
+## Nota de nomenclatura
 
----
+En negocio el termino vigente es **oficinas**. Aun asi, en codigo todavia existen nombres tecnicos como:
 
-## Acerca del Proyecto
+- carpeta `features/branches`
+- tipos `Branch`
+- campos `branch_id`
+- endpoint backend `/branches/search`
 
-**Notaría 178** es un sistema de gestión privado desarrollado a la medida para la Notaría Pública No. 178. Está diseñado para operar en una **red local** con un **servidor on-premise**, y es accesible desde las demás sucursales de la misma notaría a través de una **VPN corporativa**, garantizando que el notario titular tenga gestión y visibilidad total sobre todas las operaciones que se llevan a cabo en cada sede.
+Todo eso corresponde al catalogo de **oficinas**.
 
-> ⚠️ **Proyecto privado**: Este repositorio y su código fuente son propiedad exclusiva de la Notaría 178. No está destinado a distribución pública.
+## Stack actual
 
-### Propósito
+- React `19.2.0`
+- TypeScript `5.9.x`
+- Vite `7.3.1`
+- Tailwind CSS `4.2.1` via `@tailwindcss/vite`
+- React Router DOM `7.13.1`
+- Axios
+- Zustand para estado persistido
+- Recharts para dashboard
+- Lucide React para iconografia
+- Firebase Web SDK para push notifications
 
-- Centralizar la gestión de expedientes legales (trabajos), actos notariales, clientes, sucursales y personal.
-- Proporcionar un panel de control (dashboard) con KPIs en tiempo real para la toma de decisiones.
-- Garantizar trazabilidad mediante un sistema de auditoría y notificaciones en tiempo real (SSE).
-- Proteger la integridad de los registros históricos mediante lógica de **eliminación segura** (soft delete / deactivation).
-
----
-
-## Stack Tecnológico
-
-| Capa             | Tecnología                                   |
-|------------------|----------------------------------------------|
-| Framework        | React 19.1 + TypeScript 5.8                  |
-| Bundler          | Vite 6.3                                     |
-| Estilos          | Tailwind CSS 4.1                             |
-| HTTP Client      | Axios                                        |
-| Iconos           | Lucide React                                 |
-| Gráficos         | Recharts                                     |
-| Routing          | React Router DOM                             |
-
----
-
-## Inicio Rápido
+## Scripts
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
 npm run dev
-
-# Build de producción
 npm run build
+npm run lint
+npm run preview
 ```
 
-El servidor de desarrollo inicia en `http://localhost:5173` por defecto.
+Por default Vite sirve la app en `http://localhost:5173`.
 
-### Configuración
+## Configuracion actual
 
-El cliente HTTP está configurado en `src/config/axios.ts` y apunta al backend local:
+### Variables `.env`
 
+El `.env.example` actual incluye variables de Firebase:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_VAPID_KEY=
 ```
-Base URL: http://localhost:8080
-```
 
-Las peticiones autenticadas incluyen automáticamente el token JWT almacenado en `localStorage`.
+### API base y tiempo real
 
----
+Hay tres detalles importantes del estado actual del codigo:
 
-## Arquitectura del Proyecto
+1. `src/config/axios.ts` tiene la `baseURL` fija en `http://localhost:8080`.
+2. Algunos archivos tambien leen `VITE_API_URL`, pero si no existe caen al mismo `http://localhost:8080`.
+3. El hook de comentarios usa `ws://localhost:8080` como base para WebSocket.
 
-```
+En otras palabras: hoy la app esta pensada para correr localmente contra la API en `localhost:8080`.
+
+### Firebase y Service Worker
+
+Push notifications se apoyan en:
+
+- `src/config/firebase.ts`
+- `src/hooks/usePushNotifications.ts`
+- `src/hooks/useFCMListener.ts`
+- `public/firebase-messaging-sw.js`
+
+El service worker maneja notificaciones en background y apertura de la ruta del trabajo cuando el usuario hace click en la notificacion.
+
+## Estructura real del proyecto
+
+```text
 src/
-├── assets/              # Recursos estáticos (logos, imágenes)
-├── components/          # Componentes globales reutilizables
-│   ├── ConfirmModal.tsx      # Modal de confirmación genérica (danger/warning)
-│   ├── GlobalSearch.tsx      # Barra de búsqueda global
-│   ├── KpiCards.tsx          # Tarjetas KPI reutilizables (Total/Activo/Inactivo)
-│   └── MainLayout.tsx        # Layout principal con sidebar y topbar
-├── config/
-│   └── axios.ts              # Instancia Axios con interceptor JWT
-├── features/            # Módulos de negocio (feature-based architecture)
-│   ├── acts/                 # Catálogo de actos legales
-│   ├── auth/                 # Autenticación (login)
-│   ├── branches/             # Gestión de sucursales
-│   ├── clients/              # Registro de clientes
-│   ├── home/                 # Dashboard / Panel de control
-│   ├── profile/              # Perfil de usuario
-│   ├── users/                # Gestión de empleados (Proyectistas)
-│   └── works/                # Expedientes (trabajos)
-└── index.tsx            # Punto de entrada + Router
+  assets/
+  components/
+  config/
+  features/
+    acts/
+    attendance/
+    audit/
+    auth/
+    branches/
+    clients/
+    home/
+    notifications/
+    profile/
+    users/
+    works/
+  hooks/
+  layouts/
+  routes/
+  store/
+  utils/
+  App.tsx
+  index.css
+  main.tsx
 ```
 
-### Principios
+## Arquitectura actual
 
-- **Feature-based architecture**: Cada módulo contiene sus propias páginas, componentes, tipos, y funciones de API.
-- **Componentes globales**: UI reutilizable (`KpiCards`, `ConfirmModal`, `GlobalSearch`) se ubica en `src/components/`.
-- **Tipado estricto**: Interfaces TypeScript para todas las entidades, DTOs y respuestas de API.
-- **Consistencia de diseño**: Sistema de diseño institucional con paleta coherente (rojo oscuro `#7f1d1d`, dorado `#b8860b`, grises neutros).
+La aplicacion esta organizada por features.
 
----
+Cada modulo suele separar:
 
-## Módulos
+- `api/`
+- `components/`
+- `hooks/`
+- `pages/`
+- `types/`
 
-### 🔐 Auth (`features/auth`)
-Login con credenciales de empleado. Almacena el JWT en `localStorage` y lo inyecta automáticamente en todas las solicitudes.
+Ademas existen capas compartidas:
 
-### 🏠 Dashboard (`features/home`)
-Panel de control con KPIs, gráficos de tendencia, distribución por estado, actividad reciente, top proyectistas y actos más comunes. Datos filtrados por rango de tiempo, sucursal y búsqueda global.
+- `src/components/` para piezas reutilizables globales
+- `src/layouts/` para layout principal
+- `src/routes/` para router
+- `src/store/` para estado global persistido
+- `src/hooks/` para utilidades cross-feature
 
-### 📋 Actos Legales (`features/acts`)
-Catálogo completo de tipos de actos notariales, organizado por categorías con acordeones expandibles.
+## Rutas que existen hoy
 
-| Funcionalidad | Descripción |
-|---------------|-------------|
-| **CRUD de Actos** | Crear, editar, eliminar/desactivar actos desde una modal reutilizable |
-| **Checklist de Requisitos** | Cada acto tiene una lista de requisitos con CRUD inline (agregar/eliminar) |
-| **Eliminación Segura** | Actos con trabajos vinculados → se desactivan. Huérfanos → se eliminan permanentemente |
-| **Requisitos Seguros** | Si el acto padre tiene trabajos: requisitos se desactivan (line-through + badge). Si no: se eliminan |
-| **KPIs** | Tarjetas de Total, Activos, Inactivos |
-| **Búsqueda + Filtros** | Búsqueda global + filtro por estado (Todos/Activos/Inactivos) |
-| **Categorías** | Selector de categorías existentes o creación de nuevas (toggle inline) |
+- `/login`
+- `/home`
+- `/works`
+- `/works/:id`
+- `/proyectistas`
+- `/profile`
+- `/acts`
+- `/auditoria`
+- `/notifications`
 
-### 👥 Proyectistas (`features/users`)
-Gestión de empleados (proyectistas/redactores). Lista con búsqueda, tarjetas KPI, y modales de creación/edición.
+## Modulos visibles en la app
 
-### 📁 Expedientes (`features/works`)
-Módulo central de trabajos (expedientes legales). Creación con selección de sucursal, cliente, actos y proyectista asignado.
+### Auth
 
-### 👤 Clientes (`features/clients`)
-Registro de clientes de la notaría con nombre, RFC, teléfono y email.
+- login contra `POST /users/login`
+- persistencia de sesion en Zustand (`authStore`)
 
-### 🏢 Sucursales (`features/branches`)
-Gestión de las diferentes sedes de la notaría.
+### Home / Dashboard
 
-### 👤 Perfil (`features/profile`)
-Visualización y edición del perfil del usuario autenticado.
+- KPIs
+- grafica de tendencia
+- distribucion por estado
+- actividad reciente
+- top proyectistas
+- top actos
+- filtros globales de tiempo, oficina y orden
 
----
+El dashboard cambia segun permisos:
 
-## Componentes Globales Reutilizables
+- admins ven vista global
+- usuarios no admin ven una vista acotada
 
-| Componente | Descripción |
-|------------|-------------|
-| `KpiCards` | Tres tarjetas con Total, Activos e Inactivos. Labels configurables. Usado en Actos y Proyectistas. |
-| `ConfirmModal` | Modal de confirmación con variantes `danger` (rojo) y `warning` (ámbar). Título, mensaje y botón configurables. |
-| `GlobalSearch` | Barra de búsqueda con icono, placeholder configurable y debounce. |
-| `MainLayout` | Layout principal con sidebar de navegación y topbar. |
+### Trabajos
 
----
+Es el modulo central del frontend.
 
-## Seguridad y Red
+Incluye:
 
-- **Red local**: El sistema opera en el servidor local de la Notaría 178.
-- **VPN**: Las sucursales remotas se conectan a través de VPN corporativa para acceder al sistema.
-- **JWT**: Autenticación basada en tokens con expiración configurable.
-- **Roles**: El backend restringe endpoints según el rol del usuario (`SUPER_ADMIN`, `LOCAL_ADMIN`, `DRAFTER`, `DATA_ENTRY`).
-- **Sin exposición pública**: El sistema no se expone a Internet; toda la comunicación ocurre dentro de la red privada o la VPN.
+- listado paginado de expedientes
+- busqueda por folio, cliente o proyectista
+- filtros globales
+- modal para crear trabajo
+- badges por estado
+- navegacion al detalle
 
----
+### Detalle de trabajo
 
-## Backend
+`/works/:id` hoy ya soporta:
 
-Este frontend se conecta a la **Notaría 178 API**, un backend REST construido en Go con arquitectura hexagonal. Consulta el [README del backend](../Notaria178_API/README.md) para documentación completa de los 41 endpoints disponibles.
+- preview y descarga de documento principal
+- subida y reemplazo de documentos
+- gestion de requisitos por acto y requisitos ad-hoc
+- subida de documentos por requisito
+- alta y baja de actos asociados
+- comentarios en vivo
+- cambio de estado del expediente
+- edicion de datos del cliente
 
----
+Tambien existe una pestana de historial, pero actualmente muestra placeholder de "proximamente disponible".
+
+### Catalogo de actos
+
+- listado por categorias
+- modal de alta/edicion
+- alta y baja de requisitos
+- control de estado activo/inactivo
+
+### Proyectistas / Usuarios
+
+- tabla de personal
+- filtros por rol y estado
+- KPIs
+- alta, edicion y desactivacion
+
+Aunque la ruta visible es `/proyectistas`, la pantalla administra varios roles:
+
+- `DRAFTER`
+- `DATA_ENTRY`
+- `LOCAL_ADMIN`
+
+### Auditoria
+
+- pantalla dedicada en `/auditoria`
+- consume busqueda de logs de auditoria
+
+### Notificaciones
+
+- centro de notificaciones
+- filtro por tipo y leidas/no leidas
+- marcar una o todas como leidas
+- navegacion directa al expediente relacionado
+
+### Perfil
+
+- datos personales
+- informacion de oficina
+- historial de asistencia
+
+### Asistencia
+
+No tiene ruta dedicada en el menu.
+
+Se expone como modal global desde `GlobalFilters` y permite:
+
+- marcar entrada
+- marcar salida
+- ver historial reciente
+
+## Flujos completos
+
+### Flujo de un proyectista
+
+1. Inicia sesion en `/login` con su correo y contrasena.
+2. Entra al sistema y, desde cualquier pantalla que use `GlobalFilters`, puede abrir el modal de **Asistencia**.
+3. Si aun no ha marcado ese dia, el boton registra su **entrada**.
+4. Mas tarde, desde el mismo modal, registra su **salida**.
+5. La regla actual del sistema es de **un solo turno por dia**: despues de marcar salida ya no puede volver a marcar entrada ese mismo dia; solo podra hacerlo nuevamente al dia siguiente.
+6. En el mismo modal puede ver un historial reciente y en `/profile` puede consultar su historial de asistencia junto con sus datos personales y su oficina.
+7. Va a `/works` para revisar expedientes existentes o crear uno nuevo con el boton **Agregar trabajo**.
+8. Al crear un trabajo captura folio, fecha limite, oficina, cliente, actos iniciales y, si lo necesita, tambien puede adjuntar **documentos iniciales** desde el modal de alta.
+9. Una vez creado, entra al detalle del expediente en `/works/:id`.
+10. Dentro del detalle puede subir o reemplazar el documento principal del trabajo.
+11. Tambien puede **asociar actos** adicionales al expediente desde el detalle si el tramite cambio o crecio.
+12. Cada acto aporta requisitos, y para cada requisito el proyectista puede subir su documento correspondiente; ademas puede agregar requisitos ad-hoc del expediente y subirles archivo.
+13. En la pestana de comentarios puede conversar con otros usuarios en tiempo real por WebSocket.
+14. Si necesita corregir sus propios datos, entra a `/profile` y actualiza correo, telefono y contrasena; si su rol es privilegiado, tambien puede editar nombre y horario.
+
+### Flujo de un admin
+
+1. Inicia sesion y entra al dashboard con capacidades administrativas segun su rol.
+2. Desde `/proyectistas` puede dar de alta personal nuevo, asignarle oficina, rol, telefono y horario.
+3. En esa misma pantalla puede editar usuarios existentes, cambiar rol o estado y ajustar horarios.
+4. Desde `/acts` puede crear actos, organizarlos por categoria, editar su informacion y administrar sus requisitos.
+5. Si un acto ya tiene trabajos vinculados, la operacion visible en UI pasa a desactivacion en lugar de borrado duro.
+6. Desde `/home` consulta KPIs, tendencia, distribucion, actividad y rankings; la vista exacta depende de permisos.
+7. Desde `/auditoria` revisa el historial de acciones registradas por el sistema.
+8. Desde `/notifications` puede atender eventos del sistema y saltar directo al expediente relacionado.
+
+## Modulos tecnicos de apoyo
+
+Hay features que hoy existen como soporte de otras pantallas, aunque no tengan una pagina propia en el menu:
+
+### `features/branches`
+
+- carga el catalogo de oficinas para filtros y formularios
+
+### `features/clients`
+
+- provee tipos y APIs usados por el flujo de expedientes
+- hoy no existe una pantalla independiente de clientes en el router principal
+
+## Componentes globales relevantes
+
+Componentes reutilizados en varias vistas:
+
+- `GlobalSearch`
+- `GlobalFilters`
+- `ConfirmModal`
+- `KpiCards`
+- `RestrictedButton`
+- `StatusChangeModal`
+- `Sidebar`
+- `WorkCard`
+
+`GlobalFilters` hoy concentra:
+
+- selector de fecha
+- selector de oficina
+- selector de orden
+- boton de asistencia
+
+## Estado global
+
+### `authStore`
+
+- guarda usuario autenticado
+- guarda JWT
+- se persiste en `localStorage` bajo `notaria-auth`
+
+### `notificationStore`
+
+- guarda notificaciones y contador no leido
+- persiste en `localStorage`
+- protege contra mezclar notificaciones de usuarios distintos con `_ownerUserId`
+
+## Tiempo real actual
+
+La app usa varias estrategias al mismo tiempo:
+
+### Notificaciones in-app
+
+- `MainLayout` sincroniza notificaciones desde backend al montar
+- ademas vuelve a sincronizar cada 60 segundos
+
+### Push notifications con Firebase
+
+- `usePushNotifications` pide permiso del navegador
+- obtiene `fcm_token`
+- registra el token en `PUT /notifications/device-token`
+- `useFCMListener` escucha mensajes foreground
+- `public/firebase-messaging-sw.js` escucha mensajes background
+
+### Comentarios en vivo por WebSocket
+
+`CommentsSection` usa hooks de comentarios que se conectan a:
+
+- `ws://localhost:8080/ws/comments?token=<jwt>`
+
+El flujo actual:
+
+- entra a room por `work_id`
+- escucha nuevos comentarios
+- agrega notificaciones locales cuando el comentario viene de otro usuario
+- intenta reconectar si el socket se cae
+
+## Permisos
+
+El hook `src/hooks/usePermissions.ts` hoy expone:
+
+- `isSuperAdmin`
+- `isAdmin`
+- `canManageUsers`
+- `canViewGlobalDashboard`
+
+Con eso la UI muestra u oculta:
+
+- menu de proyectistas
+- catalogo de actos
+- vista global del dashboard
+- acciones administrativas
+
+## Estilos
+
+La app ya no usa un `tailwind.config.*` clasico.
+
+El tema vive en `src/index.css` con `@theme`, donde estan definidos:
+
+- color primario institucional
+- colores del sidebar
+- colores de badges por estado
+- fondo del dashboard
+- scrollbar custom
+
+## Relacion con el backend
+
+Este frontend consume `Notaria178_API` y hoy depende de:
+
+- REST en `http://localhost:8080`
+- SSE para notificaciones
+- WebSocket para comentarios
+- Firebase FCM para push opcional
+
+Para mas detalle de endpoints y modulos del servidor, revisa `../Notaria178_API/README.md`.

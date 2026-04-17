@@ -14,8 +14,11 @@ import { useDashboardDistribution } from '../hooks/useDashboardDistribution';
 import { useDashboardActivity } from '../hooks/useDashboardActivity';
 import { useDashboardTopDrafters } from '../hooks/useDashboardTopDrafters';
 import { useDashboardTopActs } from '../hooks/useDashboardTopActs';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 export const HomePage = () => {
+  const { canViewGlobalDashboard } = usePermissions();
+
   const [filters, setFilters] = useState<DashboardFilters>({
     timeframe: 'month',
     branch_id: '',
@@ -63,13 +66,16 @@ export const HomePage = () => {
             onDateChange={handleDateChange}
             onLocationChange={handleLocationChange}
             onSortChange={handleSortChange}
+            hideBranchFilter={!canViewGlobalDashboard}
           />
         </div>
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-600">Panel de control</h1>
+        <h1 className="text-2xl font-bold text-gray-600">
+          {canViewGlobalDashboard ? 'Panel de control' : 'Mi panel de control'}
+        </h1>
       </div>
 
       {/* Top Stats Grid Component */}
@@ -86,8 +92,14 @@ export const HomePage = () => {
         <RecentActivity data={activityData} isLoading={isActivityLoading} error={activityError} />
         
         <div className="flex flex-col gap-6 w-full h-full">
-          <TopDrafters data={draftersData} isLoading={isDraftersLoading} error={draftersError} />
-          <TopActs data={actsData} isLoading={isActsLoading} error={actsError} />
+          {canViewGlobalDashboard ? (
+            <TopDrafters data={draftersData} isLoading={isDraftersLoading} error={draftersError} />
+          ) : (
+            <TopActs data={actsData} isLoading={isActsLoading} error={actsError} />
+          )}
+          {canViewGlobalDashboard && (
+            <TopActs data={actsData} isLoading={isActsLoading} error={actsError} />
+          )}
         </div>
       </div>
     </div>

@@ -17,6 +17,8 @@ import { useUserStats } from '../hooks/useUserStats';
 import { useAuthStore } from '../../../store/authStore';
 import { updateUser } from '../api/usersApi';
 import { timeframeToDateRange } from '../../../utils/dateUtils';
+import { usePermissions } from '../../../hooks/usePermissions';
+import { RestrictedButton } from '../../../components/RestrictedButton';
 import type { Proyectista } from '../types';
 
 const ITEMS_PER_PAGE = 6;
@@ -35,6 +37,7 @@ const STATUS_FILTER_OPTIONS = [
 ];
 
 export const ProyectistasPage = () => {
+  const { canManageUsers } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [branchId, setBranchId] = useState('');
@@ -271,13 +274,14 @@ export const ProyectistasPage = () => {
         </div>
 
         <div className="ml-auto">
-          <button
+          <RestrictedButton
+            restricted={!canManageUsers}
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
           >
             <Plus size={16} />
             Agregar proyectista
-          </button>
+          </RestrictedButton>
         </div>
       </div>
 
@@ -295,6 +299,7 @@ export const ProyectistasPage = () => {
         isLoading={isLoading}
         error={error}
         currentUserEmail={currentUser?.email}
+        canManageUsers={canManageUsers}
         onEdit={handleEdit}
         onDeactivate={handleDeactivate}
       />
@@ -345,6 +350,7 @@ export const ProyectistasPage = () => {
       <EditUserModal
         isOpen={editingUser !== null}
         user={editingUser}
+        currentUserEmail={currentUser?.email}
         onClose={() => setEditingUser(null)}
         onSuccess={handleEditSuccess}
       />

@@ -6,7 +6,7 @@ interface OfficeInfoCardProps {
 }
 
 export const OfficeInfoCard = ({ branch }: OfficeInfoCardProps) => {
-  const hasBranch = branch && branch.name !== 'Sucursal no asignada';
+  const hasBranch = branch && branch.name !== 'Oficina no asignada';
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,9 +44,9 @@ export const OfficeInfoCard = ({ branch }: OfficeInfoCardProps) => {
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">
           <MapPin className="w-8 h-8 text-gray-400 mb-2" />
-          <h3 className="font-medium text-gray-600">Sin sucursal asignada</h3>
+          <h3 className="font-medium text-gray-600">Sin Oficina asignada</h3>
           <p className="text-sm text-gray-400 mt-1">
-            Contacta a un administrador para que te asigne a una sucursal y
+            Contacta a un administrador para que te asigne a una oficina y
             horario de trabajo.
           </p>
         </div>
